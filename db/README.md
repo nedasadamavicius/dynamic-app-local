@@ -1,0 +1,1 @@
+# This directory serves as a database documentation, should document how the database looks like, any other database decisions, nuances.

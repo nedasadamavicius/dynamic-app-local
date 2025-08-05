@@ -1,34 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-
-// Sample workout plans data
-const plans = [
-  { id: 'ul5x', name: 'Upper/Lower 5x' },
-  { id: 'ul4x', name: 'Upper/Lower 4x' },
-  { id: 'ulfb', name: 'Upper/Lower/Full Body' },
-];
-// Replace with a dynamic DB query like "SELECT * FROM workout_plans;"
-// Required changes:
-// 1. Create a table: workout_plans(id TEXT PRIMARY KEY, name TEXT)
-// 2. Use `useEffect` + SQLite query to fetch all plans
-// 3. Replace static `plans` with fetched data
-
+import { WorkoutPlan } from '@/models/workout-plan';
+import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 
 export default function WorkoutPlansScreen() {
+  const workoutService = useWorkoutService();
   const router = useRouter();
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]);
+
+  useEffect(() => {
+    workoutService.getWorkoutPlans().then(setPlans);
+  }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Workout Plans</Text>
       <FlatList
         data={plans}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
-            onPress={() => router.push(`/menu/workouts`)} // later: pass plan id
-            // onPress={() => router.push({ pathname: '/menu/workouts', params: { planId: item.id } })}
+            onPress={() => router.push(`/menu/workouts/${item.id}`)} // pass plan ID
           >
             <Text style={styles.planName}>{item.name}</Text>
           </TouchableOpacity>

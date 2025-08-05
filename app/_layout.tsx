@@ -1,5 +1,16 @@
+import { useEffect } from 'react';
 import { Stack } from "expo-router";
+import { WorkoutServiceProvider } from '@/providers/WorkoutServiceProvider';
+import DBManager from '@/db/DBManager';
 
 export default function RootLayout() {
-  return <Stack />;
+  useEffect(() => {
+    DBManager.initializeIfNeeded();
+  }, []);
+
+  return (
+    <WorkoutServiceProvider>
+      <Stack />
+    </WorkoutServiceProvider>
+  );
 }
