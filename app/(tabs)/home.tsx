@@ -7,7 +7,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Menu</Text>
       <TouchableOpacity
         style={styles.button}
         onPress={() => router.push('/menu/workout-plans')}
