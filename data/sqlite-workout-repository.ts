@@ -67,11 +67,11 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     return result as ExerciseSet[];
   }
 
-  async insertWorkoutPlan(workoutPlan: WorkoutPlan): Promise<number> {
+  async insertWorkoutPlan(workoutPlanName: string): Promise<number> {
     const db = (await DBManager.getInstance()).getDB();
     const result = await db.runAsync(
       "INSERT INTO workout_plan (name) VALUES (?)",
-      workoutPlan.name
+      [workoutPlanName]
     );
     return result.lastInsertRowId!;
   }

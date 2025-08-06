@@ -18,7 +18,7 @@ export interface WorkoutRepository {
 
     selectExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]>;
 
-    insertWorkoutPlan(workoutPlan: WorkoutPlan): Promise<number>;
+    insertWorkoutPlan(workoutPlanName: string): Promise<number>;
 
     insertWorkout(workout: Workout): Promise<number>;
 

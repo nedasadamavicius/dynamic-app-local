@@ -6,7 +6,7 @@ export const ManagementModeProvider = ({ children }: { children: React.ReactNode
   const toggleManaging = () => setIsManaging((prev) => !prev);
 
   return (
-    <ManagementModeContext.Provider value={{ isManaging, toggleManaging }}>
+    <ManagementModeContext.Provider value={{ isManaging, toggleManaging, setManaging: setIsManaging }}>
       {children}
     </ManagementModeContext.Provider>
   );

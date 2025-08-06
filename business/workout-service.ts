@@ -12,7 +12,7 @@ export interface WorkoutService {
 
   getExercisesOfWorkout(workoutId: number): Promise<SessionExercise[]>;
 
-  createWorkoutPlan(name: string): Promise<void>;
+  createWorkoutPlan(name: string): Promise<number>;
 
   createWorkout(name: string, workoutPlanId: number): Promise<void>;
   
