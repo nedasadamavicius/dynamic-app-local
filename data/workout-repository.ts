@@ -20,7 +20,7 @@ export interface WorkoutRepository {
 
     insertWorkoutPlan(workoutPlanName: string): Promise<number>;
 
-    insertWorkout(workout: Workout): Promise<number>;
+    insertWorkout(workoutName: string, workoutPlanId: number): Promise<number>;
 
     insertExercise(exercise: Exercise): Promise<number>;
 

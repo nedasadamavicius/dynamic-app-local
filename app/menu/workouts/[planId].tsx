@@ -1,8 +1,11 @@
-import React, { useEffect, useState }  from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useLayoutEffect, useState }  from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput } from 'react-native';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Workout } from '@/models/workout';
 import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
+import { useManagementMode } from '@/contexts/ManagementModeContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function WorkoutsScreen() {
   const workoutService = useWorkoutService();
@@ -10,28 +13,102 @@ export default function WorkoutsScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const { planId } = useLocalSearchParams();
   const numericPlanId = Number(planId);
+  const { isManaging, toggleManaging, setManaging } = useManagementMode();
+  const navigation = useNavigation();
 
-  useEffect(() => {
-    if (!isNaN(numericPlanId)) {
-      workoutService.getWorkoutsOfWorkoutPlan(numericPlanId).then(setWorkouts);
-    }
-  }, [numericPlanId]);
+  const [isModalVisible, setIsModalVisible] = useState(false); // for "create plan"
+  const [newWorkoutName, setNewWorkoutName] = useState('');
+
+  // the header with 3 dots i.e. management mode
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Workouts',
+      headerRight: () => (
+       <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
+        <Ionicons name="ellipsis-vertical" size={24} />
+       </Pressable>
+      ),
+    });
+  }, [navigation, toggleManaging]);
+
+  // sort of refreshes workouts view
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      workoutService.getWorkoutsOfWorkoutPlan(numericPlanId).then((workouts) => {
+        if (isMounted) setWorkouts(workouts);
+      });
+
+      return () => {
+        isMounted = false;
+        setManaging(false);
+      };
+    }, [])
+  ), [numericPlanId];
+
+  const handleAddNew = () => {
+    setNewWorkoutName('');
+    setIsModalVisible(true);
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Workouts</Text>
+
+      {/* Add New Workout card (only in management mode) */}
+      {isManaging && (
+        <View style={styles.cardWrapper}>
+          <TouchableOpacity style={styles.newPlanCard} onPress={handleAddNew}>
+            <Text style={styles.workoutName}>New Workout</Text>
+            {/* <View style={styles.addCircleButton}>
+              <Ionicons name="add" size={14} color="#fff" />
+            </View> */}
+          </TouchableOpacity>
+        </View>
+      )}
+
       <FlatList
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-              style={styles.card}
-              onPress={() => router.push(`/menu/workout/${item.id}`)} // pass workout ID
-          >
-            <Text style={styles.planName}>{item.name}</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.card, isManaging && {opacity: 0.6}]}
+              onPress={() => {
+                if (!isManaging) {
+                  router.push(`/menu/workout/${item.id}`);
+                }
+              }}
+            >
+              <Text style={styles.workoutName}>{item.name}</Text>
+            </TouchableOpacity>
         )}
       />
+
+            {isModalVisible && (
+              <View style={styles.modalOverlay}>
+                <View style={styles.modal}>
+                  <Text style={styles.modalTitle}>Create a new workout</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter workout name"
+                    value={newWorkoutName}
+                    onChangeText={setNewWorkoutName}
+                  />
+                  <View style={styles.modalButtons}>
+                    <Pressable onPress={() => setIsModalVisible(false)} style={styles.modalButtonCancel}>
+                      <Text>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={async () => {
+                      if (!newWorkoutName.trim()) return;
+                      const insertedId = await workoutService.createWorkout(newWorkoutName.trim(), numericPlanId);
+                      setIsModalVisible(false);
+                      router.push(`/menu/workout/${insertedId}`);
+                    }} style={styles.modalButtonConfirm}>
+                      <Text>Create</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            )}
     </View>
   );
 }
@@ -46,18 +123,89 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  cardWrapper: {
+    marginBottom: 16,
   },
   card: {
-    padding: 16,
-    backgroundColor: '#eee',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
     marginBottom: 12,
+    backgroundColor: '#eee',
     borderRadius: 8,
   },
-  planName: {
-    fontSize: 16,
+  newPlanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    // backgroundColor: 'rgba(0, 128, 0, 0.05)', // very light green tint
+    borderWidth: 1,
+    // borderColor: 'green',
+    borderColor: 'black',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+  },
+  workoutName: {
+    fontSize: 14,
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addCircleButton: {
+    backgroundColor: 'green',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  modal: {
+    width: '90%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12, // if gap unsupported, use marginRight manually
+  },
+  modalButtonCancel: {
+    padding: 10,
+  },
+  modalButtonConfirm: {
+    padding: 10,
+    backgroundColor: '#ccc',
+    borderRadius: 6,
   },
 });

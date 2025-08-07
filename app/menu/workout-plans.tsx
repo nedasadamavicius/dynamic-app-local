@@ -15,9 +15,11 @@ export default function WorkoutPlansScreen() {
 
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
 
+  // for the pop up window user gets once he presses new plan
   const [isModalVisible, setIsModalVisible] = useState(false); // for "create plan"
   const [newPlanName, setNewPlanName] = useState('');
-
+  
+  // the header with 3 dots i.e. management mode
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Workout Plans',
@@ -29,6 +31,7 @@ export default function WorkoutPlansScreen() {
     });
   }, [navigation, toggleManaging]);
 
+  // sort of refreshes workout plans view
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;

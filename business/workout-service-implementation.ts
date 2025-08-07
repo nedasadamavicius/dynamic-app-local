@@ -43,8 +43,8 @@ export class WorkoutServiceImplementation implements WorkoutService {
         return this.repository.insertWorkoutPlan(workoutPlanName);
     }
 
-    createWorkout(name: string, workoutPlanId: number): Promise<void> {
-        throw new Error("Method not implemented.");
+    async createWorkout(workoutName: string, workoutPlanId: number): Promise<number> {
+        return this.repository.insertWorkout(workoutName, workoutPlanId);
     }
     createExercise(name: string): Promise<void> {
         throw new Error("Method not implemented.");
