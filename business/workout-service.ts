@@ -21,4 +21,10 @@ export interface WorkoutService {
   linkWorkoutToExercise(exerciseId: number, workoutId: number): Promise<void>;
   
   addSetsToExercise(workoutExerciseId: number, numberOfSets: number): Promise<void>;
+
+  createExerciseForWorkout(
+    exerciseName: string,
+    workoutId: number,
+    numberOfSets: number
+  ): Promise<void>
 }

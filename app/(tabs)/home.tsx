@@ -1,19 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <TouchableOpacity
         style={styles.button}
         onPress={() => router.push('/menu/workout-plans')}
       >
         <Text style={styles.buttonText}>Workout Plans</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 

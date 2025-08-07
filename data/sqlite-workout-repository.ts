@@ -58,13 +58,35 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
 
   async selectExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> {
     const db = (await DBManager.getInstance()).getDB();
-    const result = await db.getAllAsync(
+
+    type RawExerciseSetRow = {
+      id: number;
+      set_number: number;
+      weight: number;
+      reps: number;
+      rir: number;
+      percentage: number;
+      weid: number;
+    };
+
+    const rows: RawExerciseSetRow[] = await db.getAllAsync(
       `SELECT *
        FROM exercise_set es
        WHERE es.weid = ?`,
       [workoutExerciseId]
     );
-    return result as ExerciseSet[];
+    
+    const result: ExerciseSet[] = rows.map((row): ExerciseSet => ({
+      id: row.id,
+      setNumber: row.set_number,
+      weight: row.weight,
+      reps: row.reps,
+      rir: row.rir,
+      percentage: row.percentage,
+      weid: row.weid,
+    }));
+
+    return result;
   }
 
   async insertWorkoutPlan(workoutPlanName: string): Promise<number> {
@@ -85,21 +107,20 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     return result.lastInsertRowId!;
   }
 
-  async insertExercise(exercise: Exercise): Promise<number> {
+  async insertExercise(exerciseName: string): Promise<number> {
     const db = (await DBManager.getInstance()).getDB();
     const result = await db.runAsync(
       "INSERT INTO exercise (name) VALUES (?)",
-      exercise.name
+      [exerciseName]
     );
     return result.lastInsertRowId!;
   }
 
-  async insertWorkoutExercise(workoutExercise: WorkoutExercise): Promise<number> {
+  async insertWorkoutExercise(exerciseId: number, workoutId: number): Promise<number> {
     const db = (await DBManager.getInstance()).getDB();
     const result = await db.runAsync(
       "INSERT INTO workout_exercise (eid, wid) VALUES (?, ?)",
-      workoutExercise.eid,
-      workoutExercise.wid
+      [exerciseId, workoutId]
     );
     return result.lastInsertRowId!;
   }
@@ -108,8 +129,7 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     const db = (await DBManager.getInstance()).getDB();
     const result = await db.runAsync(
       "INSERT INTO exercise_set (set_number, weid) VALUES (?, ?)",
-      setNumber,
-      workoutExerciseId
+      [setNumber, workoutExerciseId]
     );
     return result.lastInsertRowId!;
   }

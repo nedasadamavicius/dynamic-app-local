@@ -22,9 +22,9 @@ export interface WorkoutRepository {
 
     insertWorkout(workoutName: string, workoutPlanId: number): Promise<number>;
 
-    insertExercise(exercise: Exercise): Promise<number>;
+    insertExercise(exerciseName: string): Promise<number>;
 
-    insertWorkoutExercise(workoutExercise: WorkoutExercise): Promise<number>;
+    insertWorkoutExercise(exerciseId: number, workoutId: number): Promise<number>;
 
     insertExerciseSet(setNumber: number, workoutExerciseId: number): Promise<number>;
 }

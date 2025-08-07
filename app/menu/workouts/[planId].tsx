@@ -6,6 +6,7 @@ import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WorkoutsScreen() {
   const workoutService = useWorkoutService();
@@ -52,7 +53,7 @@ export default function WorkoutsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
 
       {/* Add New Workout card (only in management mode) */}
       {isManaging && (
@@ -109,7 +110,7 @@ export default function WorkoutsScreen() {
                 </View>
               </View>
             )}
-    </View>
+    </SafeAreaView>
   );
 }
 

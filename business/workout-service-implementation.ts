@@ -55,5 +55,19 @@ export class WorkoutServiceImplementation implements WorkoutService {
     addSetsToExercise(workoutExerciseId: number, numberOfSets: number): Promise<void> {
         throw new Error("Method not implemented.");
     }
+
+    async createExerciseForWorkout(
+        exerciseName: string,
+        workoutId: number,
+        numberOfSets: number
+    ): Promise<void> {
+        const exerciseId = await this.repository.insertExercise(exerciseName);
+
+        const workoutExerciseId = await this.repository.insertWorkoutExercise(exerciseId, workoutId);
+
+        for (let setNumber = 1; setNumber <= numberOfSets; setNumber++) {
+            await this.repository.insertExerciseSet(setNumber, workoutExerciseId);
+        }
+    }
     
 }
