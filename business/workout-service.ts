@@ -26,5 +26,15 @@ export interface WorkoutService {
     exerciseName: string,
     workoutId: number,
     numberOfSets: number
-  ): Promise<void>
+  ): Promise<void>;
+
+  updateExerciseSet(
+    id: number, 
+    setNumber: number, 
+    weight: number, 
+    reps: number, 
+    rir: number, 
+    percentage: number, 
+    weid: number
+  ): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import {
   View,
@@ -16,59 +16,92 @@ import { Ionicons } from '@expo/vector-icons';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// editable types (string fields for numeric inputs)
+type EditableSet = {
+  id: number;
+  setNumber: number;
+  weid: number;
+  weight: string;
+  reps: string;
+  rir: string;
+  percentage: string;
+};
+type EditableSessionExercise = {
+  weid: number;
+  exercise: SessionExercise['exercise'];
+  sets: EditableSet[];
+};
+
 export default function SessionScreen() {
   const workoutService = useWorkoutService();
-  
-  // convert string ID to numeric ID
+
   const { workoutId } = useLocalSearchParams();
   const numericWorkoutId = Number(workoutId);
 
-  // load the actual workout
   const [workout, setWorkout] = useState<Workout | null>(null);
-  // get all exercises of a workout via workout ID
   const [exercises, setExercises] = useState<SessionExercise[]>([]);
+  const [edited, setEdited] = useState<EditableSessionExercise[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  // sort of refreshes workouts view
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
 
-      if (!isNaN(numericWorkoutId)) {
-        workoutService.getWorkout(numericWorkoutId).then((w) => {
-          if (isMounted) setWorkout(w);
-        });
-
-        workoutService.getExercisesOfWorkout(numericWorkoutId).then((ex) => {
-          if (isMounted) setExercises(ex);
-        });
-      }
+      const load = async () => {
+        if (!isNaN(numericWorkoutId)) {
+          const [w, ex] = await Promise.all([
+            workoutService.getWorkout(numericWorkoutId),
+            workoutService.getExercisesOfWorkout(numericWorkoutId),
+          ]);
+          if (isMounted) {
+            setWorkout(w);
+            setExercises(ex);
+          }
+        }
+      };
+      load();
 
       return () => {
         isMounted = false;
-        setManaging(false); // reset management mode when navigating away
+        setManaging(false);
       };
     }, [numericWorkoutId])
   );
 
-  // for management mode
+  // keep local editable copy in sync (numeric -> string)
+  useEffect(() => {
+    const stringified: EditableSessionExercise[] = exercises.map(ex => ({
+      weid: ex.weid as any,
+      exercise: ex.exercise,
+      sets: ex.sets.map(s => ({
+        id: s.id,
+        setNumber: s.setNumber,
+        weid: (s as any).weid ?? ex.weid,
+        weight: s.weight == null ? '' : String(s.weight),
+        reps: s.reps == null ? '' : String(s.reps),
+        rir: s.rir == null ? '' : String(s.rir),
+        percentage: s.percentage == null ? '' : String(s.percentage),
+      })),
+    }));
+    setEdited(stringified);
+  }, [exercises]);
+
   const navigation = useNavigation();
   const { isManaging, toggleManaging, setManaging } = useManagementMode();
-  // the header with 3 dots i.e. management mode
+
   useLayoutEffect(() => {
     navigation.setOptions({
       title: workout?.name ?? '[ Session Name ]',
       headerRight: () => (
-       <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-        <Ionicons name="ellipsis-vertical" size={24} />
-       </Pressable>
+        <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
+          <Ionicons name="ellipsis-vertical" size={24} />
+        </Pressable>
       ),
     });
   }, [navigation, toggleManaging, workout]);
 
-  // to make the state of exercise button (open/close)
   const [openExercise, setOpenExercise] = useState<string | null>(null);
 
-   // for "create exercise"
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newExerciseName, setNewWorkoutName] = useState('');
   const [numberOfSets, setNumberOfSets] = useState('');
@@ -77,34 +110,101 @@ export default function SessionScreen() {
     setNewWorkoutName('');
     setIsModalVisible(true);
   };
-  
+
+  const handleChange = (
+    exIdx: number,
+    setIdx: number,
+    field: 'weight' | 'reps' | 'rir' | 'percentage',
+    value: string
+  ) => {
+    setEdited(prev => {
+      const copy = [...prev];
+      const ex = { ...copy[exIdx] };
+      const sets = [...ex.sets];
+      sets[setIdx] = { ...sets[setIdx], [field]: value };
+      ex.sets = sets;
+      copy[exIdx] = ex;
+      return copy;
+    });
+  };
+
+  // original numeric values by set id for fallbacks
+  const originalById = useMemo(() => {
+    const m = new Map<number, { weight?: number; reps?: number; rir?: number; percentage?: number; weid?: number }>();
+    exercises.forEach(ex => ex.sets.forEach(s => m.set(s.id, {
+      weight: s.weight as any,
+      reps: s.reps as any,
+      rir: s.rir as any,
+      percentage: s.percentage as any,
+      weid: (s as any).weid ?? ex.weid,
+    })));
+    return m;
+  }, [exercises]);
+
+  const parseOr = (raw: string, fallback: number) => {
+    const t = String(raw ?? '').replace(',', '.').trim();
+    if (t === '') return fallback;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const finishSession = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const tasks: Promise<void>[] = [];
+      edited.forEach(ex =>
+        ex.sets.forEach((s) => {
+          const orig = originalById.get(s.id) ?? {};
+          const weight = parseOr(s.weight, Number(orig.weight ?? 0));
+          const reps = parseOr(s.reps, Number(orig.reps ?? 0));
+          const rir = parseOr(s.rir, Number(orig.rir ?? 0));
+          const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
+          const weid = Number(s.weid ?? orig.weid ?? 0);
+
+          tasks.push(
+            workoutService.updateExerciseSet(
+              s.id,
+              s.setNumber,
+              weight,
+              reps,
+              rir,
+              percentage,
+              weid
+            )
+          );
+        })
+      );
+      await Promise.all(tasks);
+      const updated = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+      setExercises(updated);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-
-      {/* Main content */}
       <ScrollView style={styles.main}>
+        {isManaging && (
+          <TouchableOpacity style={styles.newExerciseCard} onPress={handleAddNew}>
+            <Text style={styles.exerciseName}>New Exercise</Text>
+          </TouchableOpacity>
+        )}
 
-      {/* Add New Exercise card (only in management mode) */}
-      {isManaging && (
-        <TouchableOpacity style={styles.newExerciseCard} onPress={handleAddNew}>
-          <Text style={styles.exerciseName}>New Exercise</Text>
-        </TouchableOpacity>
-      )}
-
-        {exercises.map((exercise, idx) => {
+        {edited.map((exercise, idx) => {
           const isOpen = openExercise === exercise.exercise.name;
 
           return (
             <View
-              key={idx}
-              style={[
-                styles.exerciseCard,
-                isManaging && { opacity: 0.6 } // apply dim effect in management mode
-              ]}
+              key={exercise.exercise.id ?? idx}
+              style={[styles.exerciseCard, isManaging && { opacity: 0.6 }]}
             >
-              <TouchableOpacity onPress={() =>
-                setOpenExercise(isOpen ? null : exercise.exercise.name)
-              }>
+              <TouchableOpacity
+                onPress={() =>
+                  setOpenExercise(isOpen ? null : exercise.exercise.name)
+                }
+              >
                 <Text style={styles.exerciseTitle}>
                   {exercise.exercise.name} {isOpen ? '▲' : '▼'}
                 </Text>
@@ -123,10 +223,38 @@ export default function SessionScreen() {
                   {exercise.sets.map((set, setIdx) => (
                     <View key={set.id} style={styles.setRow}>
                       <Text style={styles.setLabel}>Set #{set.setNumber}</Text>
-                      <TextInput style={styles.input} defaultValue={String(set.weight)} editable={!isManaging} />
-                      <TextInput style={styles.input} defaultValue={String(set.reps)} editable={!isManaging} />
-                      <TextInput style={styles.input} defaultValue={String(set.rir)} editable={!isManaging} />
-                      <TextInput style={styles.input} defaultValue={String(set.percentage)} editable={!isManaging} />
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        editable={!isManaging}
+                        value={edited[idx].sets[setIdx].weight}
+                        onChangeText={(v) => handleChange(idx, setIdx, 'weight', v)}
+                      />
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        editable={!isManaging}
+                        value={edited[idx].sets[setIdx].reps}
+                        onChangeText={(v) => handleChange(idx, setIdx, 'reps', v)}
+                      />
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        editable={!isManaging}
+                        value={edited[idx].sets[setIdx].rir}
+                        onChangeText={(v) => handleChange(idx, setIdx, 'rir', v)}
+                      />
+
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        editable={!isManaging}
+                        value={edited[idx].sets[setIdx].percentage}
+                        onChangeText={(v) => handleChange(idx, setIdx, 'percentage', v)}
+                      />
                     </View>
                   ))}
                 </>
@@ -187,9 +315,12 @@ export default function SessionScreen() {
         </View>
       )}
 
-      {/* Finish session button */}
-      <TouchableOpacity style={styles.finishButton}>
-        <Text style={styles.finishText}>Finish Session</Text>
+      <TouchableOpacity
+        style={[styles.finishButton, saving && { opacity: 0.6 }]}
+        onPress={finishSession}
+        disabled={saving}
+      >
+        <Text style={styles.finishText}>{saving ? 'Saving…' : 'Finish Session'}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -200,141 +331,156 @@ export const options = {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container: { 
+    flex: 1, 
+    backgroundColor: '#fff' 
   },
-  header: {
-    flexDirection: 'row',
-    padding: 16,
-    alignItems: 'center',
-    backgroundColor: '#eee',
-    justifyContent: 'space-between',
+  
+  header: { 
+    flexDirection: 'row', 
+    padding: 16, 
+    alignItems: 'center', 
+    backgroundColor: '#eee', 
+    justifyContent: 'space-between' 
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  
+  title: { 
+    fontSize: 18, 
+    fontWeight: 'bold' 
   },
-  main: {
-    flex: 1,
-    padding: 16,
+  
+  main: { 
+    flex: 1, 
+    padding: 16 
   },
-  exerciseCard: {
-    backgroundColor: '#f2f2f2',
-    padding: 12,
-    marginBottom: 20,
-    borderRadius: 8,
+  
+  exerciseCard: { 
+    backgroundColor: '#f2f2f2', 
+    padding: 12, 
+    marginBottom: 20, 
+    borderRadius: 8 
   },
-  exerciseTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 10,
+  
+  exerciseTitle: { 
+    fontWeight: 'bold', 
+    fontSize: 16, 
+    marginBottom: 10 
   },
-  exerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  
+  exerciseHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 8 
   },
-  headerItem: {
-    width: '18%',
-    fontWeight: '600',
-    fontSize: 12,
-    textAlign: 'left',
+  
+  headerItem: { 
+    width: '18%', 
+    fontWeight: '600', 
+    fontSize: 12, 
+    textAlign: 'left' 
   },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  
+  setRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 8 
   },
-  setLabel: {
-    width: '18%',
-    fontSize: 14,
+  
+  setLabel: { 
+    width: '18%', 
+    fontSize: 14 
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 6,
-    width: '18%',
-    marginLeft: 4,
-    borderRadius: 4,
-    fontSize: 14,
+  
+  input: { 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    padding: 6, 
+    width: '18%', 
+    marginLeft: 4, 
+    borderRadius: 4, 
+    fontSize: 14
   },
-  finishButton: {
-    padding: 16,
-    backgroundColor: '#007bff',
-    alignItems: 'center',
+  
+  finishButton: { 
+    padding: 16, 
+    backgroundColor: '#007bff', 
+    alignItems: 'center' 
   },
-  finishText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+  
+  finishText: { 
+    color: 'white', 
+    fontWeight: 'bold', 
+    fontSize: 16 
   },
-  cardWrapper: {
-  marginBottom: 16,
-},
-newExerciseCard: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: 16,
-  borderWidth: 1,
-  borderColor: 'black',
-  borderStyle: 'dashed',
-  borderRadius: 8,
-  marginBottom: 16,
-},
-
-exerciseName: {
-  fontSize: 16,
-},
-
-modalOverlay: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 10,
-},
-
-modal: {
-  width: '90%',
-  backgroundColor: '#fff',
-  padding: 20,
-  borderRadius: 10,
-},
-
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 12,
-},
-
-modalButtons: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  gap: 12, // fallback to marginRight if needed
-},
-
-modalButtonCancel: {
-  padding: 10,
-},
-
-modalButtonConfirm: {
-  padding: 10,
-  backgroundColor: '#ccc',
-  borderRadius: 6,
-},
-modalInput: {
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 6,
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  marginBottom: 12,
-  fontSize: 14,
-},
+  
+  cardWrapper: { 
+    marginBottom: 16 
+  },
+  
+  newExerciseCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    padding: 16, 
+    borderWidth: 1, 
+    borderColor: 'black', 
+    borderStyle: 'dashed', 
+    borderRadius: 8, 
+    marginBottom: 16 
+  },
+  
+  exerciseName: { 
+    fontSize: 16 
+  },
+  
+  modalOverlay: { 
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0, 
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    zIndex: 10 
+  },
+  
+  modal: { 
+    width: '90%', 
+    backgroundColor: '#fff', 
+    padding: 20, 
+    borderRadius: 10 
+  },
+  
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 12 
+  },
+  
+  modalButtons: { 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', 
+    gap: 12 
+  },
+  
+  modalButtonCancel: { 
+    padding: 10 
+  },
+  
+  modalButtonConfirm: { 
+    padding: 10, 
+    backgroundColor: '#ccc', 
+    borderRadius: 6 
+  },
+  
+  modalInput: { 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 6, 
+    paddingVertical: 10, 
+    paddingHorizontal: 12, 
+    marginBottom: 12, 
+    fontSize: 14 
+  },
 });

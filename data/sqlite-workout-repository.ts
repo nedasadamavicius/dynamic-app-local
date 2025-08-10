@@ -133,4 +133,14 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     );
     return result.lastInsertRowId!;
   }
+
+  async updateExerciseSet(exerciseSet: ExerciseSet): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    const result = await db.runAsync(
+      `UPDATE exercise_set
+       SET weight = ?, reps = ?, rir = ?, percentage = ?
+       WHERE id = ?`,
+      [exerciseSet.weight, exerciseSet.reps, exerciseSet.rir, exerciseSet.percentage, exerciseSet.id]
+    );
+  }
 }

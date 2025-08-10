@@ -3,6 +3,7 @@ import { WorkoutPlan } from "@/models/workout-plan";
 import { SessionExercise } from "@/models/session-exercise";
 import { WorkoutService } from "./workout-service";
 import { WorkoutRepository } from "@/data/workout-repository";
+import { ExerciseSet } from "@/models/exercise-set";
 
 export class WorkoutServiceImplementation implements WorkoutService {
     constructor(private repository: WorkoutRepository) {}
@@ -68,6 +69,20 @@ export class WorkoutServiceImplementation implements WorkoutService {
         for (let setNumber = 1; setNumber <= numberOfSets; setNumber++) {
             await this.repository.insertExerciseSet(setNumber, workoutExerciseId);
         }
+    }
+
+    async updateExerciseSet(id: number, setNumber: number, weight: number, reps: number, rir: number, percentage: number, weid: number): Promise<void> {
+        const exerciseSet: ExerciseSet = {
+            id,
+            setNumber,
+            weight,
+            reps,
+            rir,
+            percentage,
+            weid
+        };
+
+        await this.repository.updateExerciseSet(exerciseSet);
     }
     
 }
