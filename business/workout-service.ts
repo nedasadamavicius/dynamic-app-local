@@ -16,11 +16,13 @@ export interface WorkoutService {
 
   createWorkout(workoutName: string, workoutPlanId: number): Promise<number>;
   
-  createExercise(name: string): Promise<void>;
+  createExercise(exerciceName: string): Promise<number>
   
-  linkWorkoutToExercise(exerciseId: number, workoutId: number): Promise<void>;
+  linkWorkoutToExercise(exerciseId: number, workoutId: number): Promise<number>;
   
   addSetsToExercise(workoutExerciseId: number, numberOfSets: number): Promise<void>;
+
+  addSetToExercise(setNumber: number, workoutExerciseId: number): Promise<void>;
 
   createExerciseForWorkout(
     exerciseName: string,
@@ -37,4 +39,6 @@ export interface WorkoutService {
     percentage: number, 
     weid: number
   ): Promise<void>;
+
+  removeExerciseSet(setId: number): Promise<void>;
 }

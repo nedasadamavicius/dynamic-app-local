@@ -136,11 +136,21 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
 
   async updateExerciseSet(exerciseSet: ExerciseSet): Promise<void> {
     const db = (await DBManager.getInstance()).getDB();
-    const result = await db.runAsync(
+    await db.runAsync(
       `UPDATE exercise_set
        SET weight = ?, reps = ?, rir = ?, percentage = ?
        WHERE id = ?`,
       [exerciseSet.weight, exerciseSet.reps, exerciseSet.rir, exerciseSet.percentage, exerciseSet.id]
+    );
+  }
+
+  async deleteExerciseSet(setId: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `DELETE 
+       FROM exercise_set
+       WHERE id = ?`,
+      [setId]
     );
   }
 }

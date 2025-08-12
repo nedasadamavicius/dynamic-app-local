@@ -29,4 +29,6 @@ export interface WorkoutRepository {
     insertExerciseSet(setNumber: number, workoutExerciseId: number): Promise<number>;
 
     updateExerciseSet(exerciseSet: ExerciseSet): Promise<void>;
+
+    deleteExerciseSet(setId: number): Promise<void>;
 }

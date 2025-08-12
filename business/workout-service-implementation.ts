@@ -47,14 +47,23 @@ export class WorkoutServiceImplementation implements WorkoutService {
     async createWorkout(workoutName: string, workoutPlanId: number): Promise<number> {
         return this.repository.insertWorkout(workoutName, workoutPlanId);
     }
-    createExercise(name: string): Promise<void> {
-        throw new Error("Method not implemented.");
+
+    async createExercise(exerciceName: string): Promise<number> {
+        return this.repository.insertExercise(exerciceName);
     }
-    linkWorkoutToExercise(exerciseId: number, workoutId: number): Promise<void> {
-        throw new Error("Method not implemented.");
+
+    async linkWorkoutToExercise(exerciseId: number, workoutId: number): Promise<number> {
+        return this.repository.insertWorkoutExercise(exerciseId, workoutId);
     }
-    addSetsToExercise(workoutExerciseId: number, numberOfSets: number): Promise<void> {
-        throw new Error("Method not implemented.");
+
+    async addSetToExercise(setNumber: number, workoutExerciseId: number): Promise<void> {
+        await this.repository.insertExerciseSet(setNumber, workoutExerciseId);
+    }
+
+    async addSetsToExercise(workoutExerciseId: number, numberOfSets: number): Promise<void> {
+        for (let setNumber = 1; setNumber <= numberOfSets; setNumber++) {
+            this.addSetToExercise(setNumber, workoutExerciseId);
+        }
     }
 
     async createExerciseForWorkout(
@@ -62,13 +71,11 @@ export class WorkoutServiceImplementation implements WorkoutService {
         workoutId: number,
         numberOfSets: number
     ): Promise<void> {
-        const exerciseId = await this.repository.insertExercise(exerciseName);
+        const exerciseId = await this.createExercise(exerciseName);
 
-        const workoutExerciseId = await this.repository.insertWorkoutExercise(exerciseId, workoutId);
+        const workoutExerciseId = await this.linkWorkoutToExercise(exerciseId, workoutId);
 
-        for (let setNumber = 1; setNumber <= numberOfSets; setNumber++) {
-            await this.repository.insertExerciseSet(setNumber, workoutExerciseId);
-        }
+        await this.addSetsToExercise(workoutExerciseId, numberOfSets);
     }
 
     async updateExerciseSet(id: number, setNumber: number, weight: number, reps: number, rir: number, percentage: number, weid: number): Promise<void> {
@@ -84,5 +91,8 @@ export class WorkoutServiceImplementation implements WorkoutService {
 
         await this.repository.updateExerciseSet(exerciseSet);
     }
-    
+
+    async removeExerciseSet(setId: number): Promise<void> {
+        await this.repository.deleteExerciseSet(setId);
+    }
 }

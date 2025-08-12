@@ -128,6 +128,23 @@ export default function SessionScreen() {
     });
   };
 
+  const handleAddSet = async (exIdx: number) => {
+    const ex = edited[exIdx];
+    const nextSetNumber = ex.sets.length + 1;
+    await workoutService.addSetToExercise(
+      nextSetNumber, ex.weid
+    );
+    const refreshed = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+    setExercises(refreshed);
+  };
+
+  const handleRemoveSet = async (exIdx: number, setIdx: number) => {
+    const setId = edited[exIdx].sets[setIdx].id;
+    await workoutService.removeExerciseSet(setId);
+    const refreshed = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+    setExercises(refreshed);
+  };
+
   // original numeric values by set id for fallbacks
   const originalById = useMemo(() => {
     const m = new Map<number, { weight?: number; reps?: number; rir?: number; percentage?: number; weid?: number }>();
@@ -225,7 +242,7 @@ export default function SessionScreen() {
                       <Text style={styles.setLabel}>Set #{set.setNumber}</Text>
 
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isManaging && styles.inputCompact]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].weight}
@@ -233,7 +250,7 @@ export default function SessionScreen() {
                       />
 
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isManaging && styles.inputCompact]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].reps}
@@ -241,7 +258,7 @@ export default function SessionScreen() {
                       />
 
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isManaging && styles.inputCompact]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].rir}
@@ -249,14 +266,44 @@ export default function SessionScreen() {
                       />
 
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isManaging && styles.inputCompact]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].percentage}
                         onChangeText={(v) => handleChange(idx, setIdx, 'percentage', v)}
                       />
+
+                      {isManaging && (
+                        <View style={styles.actionsCell}>
+                          <Pressable
+                            onPress={() => handleRemoveSet(idx, setIdx)}
+                            style={styles.iconBtn}
+                            hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                          >
+                            <Ionicons name="trash-outline" size={16} />
+                          </Pressable>
+                        </View>
+                      )}
                     </View>
                   ))}
+
+                  {isManaging && (
+                    <View style={[styles.setRow, styles.addSetRow]}>
+                      {/* column under "Set #" */}
+                      <View style={styles.setLabelCol}>
+                        <Pressable onPress={() => handleAddSet(idx)} style={styles.addSetBtn}>
+                          <Ionicons name="add" size={16} />
+                        </Pressable>
+                      </View>
+
+                      {/* keep grid alignment; empty columns */}
+                      <View style={styles.col} />
+                      <View style={styles.col} />
+                      <View style={styles.col} />
+                      <View style={styles.col} />
+                      <View style={styles.actionsCol} />
+                    </View>
+                  )}
                 </>
               )}
             </View>
@@ -335,7 +382,6 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#fff' 
   },
-  
   header: { 
     flexDirection: 'row', 
     padding: 16, 
@@ -343,54 +389,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee', 
     justifyContent: 'space-between' 
   },
-  
   title: { 
     fontSize: 18, 
     fontWeight: 'bold' 
   },
-  
   main: { 
     flex: 1, 
     padding: 16 
   },
-  
   exerciseCard: { 
     backgroundColor: '#f2f2f2', 
     padding: 12, 
     marginBottom: 20, 
-    borderRadius: 8 
+    borderRadius: 8,
+    overflow: 'hidden',              // keep icons inside rounded box
   },
-  
   exerciseTitle: { 
     fontWeight: 'bold', 
     fontSize: 16, 
     marginBottom: 10 
   },
-  
   exerciseHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     marginBottom: 8 
   },
-  
   headerItem: { 
     width: '18%', 
     fontWeight: '600', 
     fontSize: 12, 
     textAlign: 'left' 
   },
-  
   setRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 8 
   },
-  
   setLabel: { 
     width: '18%', 
     fontSize: 14 
   },
-  
   input: { 
     borderWidth: 1, 
     borderColor: '#ccc', 
@@ -400,23 +438,22 @@ const styles = StyleSheet.create({
     borderRadius: 4, 
     fontSize: 14
   },
-  
+  // narrower inputs while managing to make room for actions column
+  inputCompact: { width: '17%', marginLeft: 2 },
+
   finishButton: { 
     padding: 16, 
     backgroundColor: '#007bff', 
     alignItems: 'center' 
   },
-  
   finishText: { 
     color: 'white', 
     fontWeight: 'bold', 
     fontSize: 16 
   },
-  
   cardWrapper: { 
     marginBottom: 16 
   },
-  
   newExerciseCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -428,11 +465,9 @@ const styles = StyleSheet.create({
     borderRadius: 8, 
     marginBottom: 16 
   },
-  
   exerciseName: { 
     fontSize: 16 
   },
-  
   modalOverlay: { 
     position: 'absolute', 
     top: 0, 
@@ -444,43 +479,59 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     zIndex: 10 
   },
-  
   modal: { 
     width: '90%', 
     backgroundColor: '#fff', 
     padding: 20, 
     borderRadius: 10 
   },
-  
   modalTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
     marginBottom: 12 
   },
-  
   modalButtons: { 
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
     gap: 12 
   },
-  
   modalButtonCancel: { 
     padding: 10 
   },
-  
   modalButtonConfirm: { 
     padding: 10, 
     backgroundColor: '#ccc', 
     borderRadius: 6 
   },
-  
   modalInput: { 
     borderWidth: 1, 
     borderColor: '#ccc', 
     borderRadius: 6, 
-    paddingVertical: 10, 
+    paddingVertical: 10,
     paddingHorizontal: 12, 
     marginBottom: 12, 
     fontSize: 14 
+  },
+
+  // actions / icons
+  actionsHeader: { width: '10%', textAlign: 'right' },
+  actionsCell: { width: '10%', alignItems: 'flex-end', paddingRight: 2 },
+  iconBtn: {
+    width: 28, height: 28,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: '#ddd',
+    borderRadius: 6, backgroundColor: '#fff',
+  },
+
+  // add set (icon only) under "Set #"
+  addSetRow: { marginTop: 6, paddingRight: 0 },
+  setLabelCol: { width: '18%', justifyContent: 'center' },
+  col: { width: '18%' },
+  actionsCol: { width: '10%' },
+  addSetBtn: {
+    width: 32, height: 32,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: '#ccc',
+    borderRadius: 8, backgroundColor: '#fff',
   },
 });
