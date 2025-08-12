@@ -7,6 +7,7 @@ import { WorkoutRepository } from "./workout-repository";
 import DBManager from "@/db/DBManager";
 
 export class SQLiteWorkoutRepository implements WorkoutRepository {
+
   async selectWorkoutPlans(): Promise<WorkoutPlan[]> {
     const db = (await DBManager.getInstance()).getDB();
     const result = await db.getAllAsync("SELECT id, name FROM workout_plan");
@@ -151,6 +152,36 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
        FROM exercise_set
        WHERE id = ?`,
       [setId]
+    );
+  }
+
+  async deleteWorkoutExercise(workoutExerciseId: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `DELETE
+       FROM workout_exercise
+       WHERE id = ?`,
+       [workoutExerciseId]
+    );
+  }
+
+  async deleteWorkout(workoutId: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `DELETE
+       FROM workout
+       WHERE id = ?`,
+      [workoutId]
+    );
+  }
+  
+  async deleteWorkoutPlan(workoutPlanId: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `DELETE
+       FROM workout_plan
+       WHERE id = ?`,
+       [workoutPlanId]
     );
   }
 }

@@ -41,4 +41,12 @@ export interface WorkoutService {
   ): Promise<void>;
 
   removeExerciseSet(setId: number): Promise<void>;
+
+  removeWorkoutExercise(workoutExerciseId: number): Promise<void>;
+
+  removeExercise(exerciseId: number): Promise<void>;
+
+  removeWorkout(workoutId: number): Promise<void>;
+
+  removeWorkoutPlan(workoutPlanId: number): Promise<void>;
 }

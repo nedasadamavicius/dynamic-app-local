@@ -1,3 +1,5 @@
+pragma foreign_keys = on;
+
 create table workout_plan (
     id integer primary key autoincrement,
     name text,
@@ -10,8 +12,8 @@ create table workout (
     name text,
     last_used date default '2000-12-30',
     counter integer default 0,
-    wpid integer,
-    foreign key (wpid) references workout_plan(id)
+    wpid integer not null,
+    foreign key (wpid) references workout_plan(id) on delete cascade -- if workout plan is removed, remove workout entry
 );
 
 create table exercise (
@@ -21,10 +23,10 @@ create table exercise (
 
 create table workout_exercise (
     id integer primary key autoincrement,
-    eid integer,
-    wid integer,
-    foreign key (eid) references exercise(id),
-    foreign key (wid) references workout(id),
+    eid integer not null,
+    wid integer not null,
+    foreign key (eid) references exercise(id) on delete cascade, -- if exercise is removed, remove associated entry
+    foreign key (wid) references workout(id) on delete cascade, -- if workout is removed, remove associated entry
     unique (eid, wid)
 );
 
@@ -35,6 +37,11 @@ create table exercise_set (
     reps integer default 0,
     rir integer default 0,
     percentage real default 0.0,
-    weid integer,
-    foreign key (weid) references workout_exercise(id)
+    weid integer not null,
+    foreign key (weid) references workout_exercise(id) on delete cascade -- if an workout_exercise entry is removed, remove associated sets
 );
+
+create index if not exists idx_workout_wpid on workout(wpid);
+create index if not exists idx_we_wid on workout_exercise(wid);
+create index if not exists idx_we_eid on workout_exercise(eid);
+create index if not exists idx_exercise_set_weid on exercise_set(weid);

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Alert
 } from 'react-native';
 import { SessionExercise } from '@/models/session-exercise';
 import { Workout } from '@/models/workout';
@@ -145,6 +146,29 @@ export default function SessionScreen() {
     setExercises(refreshed);
   };
 
+  const handleRemoveExercise = (exIdx: number) => {
+    const weid = edited[exIdx].weid;
+    const name = edited[exIdx].exercise.name;
+
+    Alert.alert(
+      'Remove exercise',
+      `Remove "${name}" from this workout?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            await workoutService.removeWorkoutExercise(weid);
+            const refreshed = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+            setExercises(refreshed);
+            if (openExercise === name) setOpenExercise(null);
+          },
+        },
+      ]
+    );
+  };
+
   // original numeric values by set id for fallbacks
   const originalById = useMemo(() => {
     const m = new Map<number, { weight?: number; reps?: number; rir?: number; percentage?: number; weid?: number }>();
@@ -217,15 +241,28 @@ export default function SessionScreen() {
               key={exercise.exercise.id ?? idx}
               style={[styles.exerciseCard, isManaging && { opacity: 0.6 }]}
             >
-              <TouchableOpacity
-                onPress={() =>
-                  setOpenExercise(isOpen ? null : exercise.exercise.name)
-                }
-              >
-                <Text style={styles.exerciseTitle}>
-                  {exercise.exercise.name} {isOpen ? '▲' : '▼'}
-                </Text>
-              </TouchableOpacity>
+
+              <View style={styles.exerciseTitleRow}>
+                <TouchableOpacity
+                  onPress={() =>
+                    setOpenExercise(isOpen ? null : exercise.exercise.name)
+                  }
+                >
+                  <Text style={styles.exerciseTitle}>
+                    {exercise.exercise.name} {isOpen ? '▲' : '▼'}
+                  </Text>
+                </TouchableOpacity>
+
+                {isManaging && (
+                  <Pressable
+                    onPress={() => handleRemoveExercise(idx)}
+                    style={styles.headerIconBtn}
+                    hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                  >
+                    <Ionicons name="trash-outline" size={16} />
+                  </Pressable>
+                )}
+              </View>
 
               {isOpen && (
                 <>
@@ -533,5 +570,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: '#ccc',
     borderRadius: 8, backgroundColor: '#fff',
+  },
+
+  exerciseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  
+  headerIconBtn: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    backgroundColor: '#fff',
   },
 });

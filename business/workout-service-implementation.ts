@@ -95,4 +95,20 @@ export class WorkoutServiceImplementation implements WorkoutService {
     async removeExerciseSet(setId: number): Promise<void> {
         await this.repository.deleteExerciseSet(setId);
     }
+
+    async removeWorkoutExercise(workoutExerciseId: number): Promise<void> {
+        await this.repository.deleteWorkoutExercise(workoutExerciseId);
+    }
+    
+    async removeExercise(exerciseId: number): Promise<void> {
+        await this.repository.deleteExerciseSet(exerciseId);
+    }
+    
+    async removeWorkout(workoutId: number): Promise<void> {
+        await this.repository.deleteWorkout(workoutId);
+    }
+    
+    async removeWorkoutPlan(workoutPlanId: number): Promise<void> {
+        await this.repository.deleteWorkoutPlan(workoutPlanId);
+    }
 }

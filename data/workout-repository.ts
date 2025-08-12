@@ -31,4 +31,10 @@ export interface WorkoutRepository {
     updateExerciseSet(exerciseSet: ExerciseSet): Promise<void>;
 
     deleteExerciseSet(setId: number): Promise<void>;
+
+    deleteWorkoutExercise(workoutExerciseId: number): Promise<void>;
+
+    deleteWorkout(workoutId: number): Promise<void>;
+
+    deleteWorkoutPlan(workoutPlanId: number): Promise<void>;
 }
