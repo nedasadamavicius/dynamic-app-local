@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState }  from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput } from 'react-native';
+import React, { useCallback, useLayoutEffect, useState }  from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Workout } from '@/models/workout';
 import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
@@ -39,17 +39,35 @@ export default function WorkoutsScreen() {
       workoutService.getWorkoutsOfWorkoutPlan(numericPlanId).then((workouts) => {
         if (isMounted) setWorkouts(workouts);
       });
-
       return () => {
         isMounted = false;
         setManaging(false);
       };
-    }, [])
-  ), [numericPlanId];
+    }, [numericPlanId])
+  );
 
   const handleAddNew = () => {
     setNewWorkoutName('');
     setIsModalVisible(true);
+  };
+
+  const confirmRemoveWorkout = (workoutId: number, name: string) => {
+    Alert.alert(
+      'Remove workout',
+      `Remove "${name}" from this plan?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            await workoutService.removeWorkout(workoutId);
+            const list = await workoutService.getWorkoutsOfWorkoutPlan(numericPlanId);
+            setWorkouts(list);
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -71,16 +89,25 @@ export default function WorkoutsScreen() {
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
+          <View style={[styles.card, isManaging && { opacity: 0.6 }]}>
             <TouchableOpacity
-              style={[styles.card, isManaging && {opacity: 0.6}]}
-              onPress={() => {
-                if (!isManaging) {
-                  router.push(`/menu/workout/${item.id}`);
-                }
-              }}
+              style={styles.cardMain}
+              disabled={isManaging}
+              onPress={() => router.push(`/menu/workout/${item.id}`)}
             >
               <Text style={styles.workoutName}>{item.name}</Text>
             </TouchableOpacity>
+
+            {isManaging && (
+              <Pressable
+                onPress={() => confirmRemoveWorkout(item.id, item.name)}
+                style={styles.headerIconBtn}
+                hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+              >
+                <Ionicons name="trash-outline" size={16} />
+              </Pressable>
+            )}
+          </View>
         )}
       />
 
@@ -147,6 +174,7 @@ const styles = StyleSheet.create({
     borderColor: 'black',
     borderStyle: 'dashed',
     borderRadius: 8,
+    overflow: 'hidden',
   },
   workoutName: {
     fontSize: 14,
@@ -208,5 +236,20 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#ccc',
     borderRadius: 6,
+  },
+
+  cardMain: { 
+    flex: 1 
+  },
+
+  headerIconBtn: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    backgroundColor: '#fff',
   },
 });
