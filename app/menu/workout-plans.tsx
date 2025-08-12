@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput, Alert } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { WorkoutPlan } from '@/models/workout-plan';
@@ -54,6 +54,25 @@ export default function WorkoutPlansScreen() {
     // setPlans(updated);
   };
 
+  const confirmRemovePlan = (planId: number, name: string) => {
+    Alert.alert(
+      'Remove plan',
+      `Remove "${name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            await workoutService.removeWorkoutPlan(planId);
+            const updated = await workoutService.getWorkoutPlans();
+            setPlans(updated);
+          },
+        },
+      ]
+    );
+  };
+
   const handleAddNew = () => {
     setNewPlanName('');
     setIsModalVisible(true);
@@ -79,26 +98,25 @@ return (
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
-            <TouchableOpacity
-              style={[styles.card, isManaging && {opacity: 0.6}]}
-              onPress={() => {
-                if (!isManaging) {
-                  router.push(`/menu/workouts/${item.id}`);
-                }
-              }}
-            >
-              <Text style={styles.planName}>{item.name}</Text>
-              
-              {/* for MVP2 */}
-              {/* {isManaging && (
+            <View style={[styles.card, isManaging && { opacity: 0.6 }]}>
+              <TouchableOpacity
+                style={styles.cardMain}
+                disabled={isManaging}
+                onPress={() => router.push(`/menu/workouts/${item.id}`)}
+              >
+                <Text style={styles.planName}>{item.name}</Text>
+              </TouchableOpacity>
+
+              {isManaging && (
                 <Pressable
-                  onPress={() => handleDelete(item.id)}
-                  style={styles.deleteButton}
+                  onPress={() => confirmRemovePlan(item.id, item.name)}
+                  style={styles.headerIconBtn}
+                  hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
                 >
-                  <Ionicons name="close" size={14} color="#fff" />
+                  <Ionicons name="trash-outline" size={16} />
                 </Pressable>
-              )} */}
-            </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
       />
@@ -140,9 +158,11 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: '#fff',
   },
+  
   cardWrapper: {
     marginBottom: 16,
   },
+
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -150,7 +170,13 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#eee',
     borderRadius: 8,
+    overflow: 'hidden',
   },
+
+  cardMain: {
+    flex: 1
+  },
+
   newPlanCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -163,9 +189,11 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: 8,
   },
+
   planName: {
     fontSize: 16,
   },
+
   deleteButton: {
     backgroundColor: 'red',
     borderRadius: 12,
@@ -174,6 +202,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   addCircleButton: {
     backgroundColor: 'green',
     borderRadius: 12,
@@ -182,6 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   modalOverlay: {
     position: 'absolute',
     top: 0,
@@ -193,17 +223,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+
   modal: {
     width: '90%',
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 10,
   },
+
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
   },
+
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -211,17 +244,31 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 16,
   },
+
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12, // if gap unsupported, use marginRight manually
   },
+
   modalButtonCancel: {
     padding: 10,
   },
+
   modalButtonConfirm: {
     padding: 10,
     backgroundColor: '#ccc',
     borderRadius: 6,
+  },
+
+  headerIconBtn: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    backgroundColor: '#fff',
   },
 });
