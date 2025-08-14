@@ -184,4 +184,36 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
        [workoutPlanId]
     );
   }
+
+  async updateExerciseName(exerciseId: number, newExerciseName: string): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `UPDATE exercise
+       SET "name" = ?
+       WHERE id = ?`,
+      [newExerciseName, exerciseId]
+    );
+  }
+
+  async updateWorkoutName(workoutId: number, newWorkoutName: string): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `UPDATE workout
+       SET "name" = ?
+       WHERE id = ?`,
+      [newWorkoutName, workoutId]
+    );
+  }
+
+  async updateWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `UPDATE workout_plan
+       SET "name" = ?
+       WHERE id = ?`,
+      [newWorkoutPlanName, workoutPlanId]
+    );
+  }
+
+  
 }

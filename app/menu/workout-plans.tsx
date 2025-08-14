@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable, TextInput, Alert } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,11 @@ export default function WorkoutPlansScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false); // for "create plan"
   const [newPlanName, setNewPlanName] = useState('');
   
+  // for renaming workout plan
+  const [isRenameVisible, setIsRenameVisible] = useState(false);
+  const [renameText, setRenameText] = useState('');
+  const [renameTarget, setRenameTarget] = useState<{ id: number; name: string } | null>(null);
+
   // the header with 3 dots i.e. management mode
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -47,13 +52,6 @@ export default function WorkoutPlansScreen() {
     }, [])
   );
 
-  // for MVP2
-  const handleDelete = async (planId: number) => {
-    // await workoutService.deleteWorkoutPlan(planId); // Assuming this exists
-    // const updated = await workoutService.getWorkoutPlans();
-    // setPlans(updated);
-  };
-
   const confirmRemovePlan = (planId: number, name: string) => {
     Alert.alert(
       'Remove plan',
@@ -76,6 +74,23 @@ export default function WorkoutPlansScreen() {
   const handleAddNew = () => {
     setNewPlanName('');
     setIsModalVisible(true);
+  };
+
+  const openRenamePlan = (id: number, name: string) => {
+    setRenameTarget({ id, name });
+    setRenameText(name);
+    setIsRenameVisible(true);
+  };
+
+  const saveRenamePlan = async () => {
+    if (!renameTarget) return;
+    const name = renameText.trim();
+    if (!name || name === renameTarget.name) { setIsRenameVisible(false); setRenameTarget(null); return; }
+    await workoutService.changeWorkoutPlanName(renameTarget.id, name);
+    const updated = await workoutService.getWorkoutPlans();
+    setPlans(updated);
+    setIsRenameVisible(false);
+    setRenameTarget(null);
   };
 
 return (
@@ -108,19 +123,29 @@ return (
               </TouchableOpacity>
 
               {isManaging && (
-                <Pressable
-                  onPress={() => confirmRemovePlan(item.id, item.name)}
-                  style={styles.headerIconBtn}
-                  hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
-                >
-                  <Ionicons name="trash-outline" size={16} />
-                </Pressable>
+                <View style={styles.actionsRight}>
+                  <Pressable
+                    onPress={() => openRenamePlan(item.id, item.name)}
+                    style={styles.headerIconBtn}
+                    hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                  >
+                    <Ionicons name="create-outline" size={16} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => confirmRemovePlan(item.id, item.name)}
+                    style={[styles.headerIconBtn, styles.iconSpacing]}
+                    hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                  >
+                    <Ionicons name="trash-outline" size={16} />
+                  </Pressable>
+                </View>
               )}
             </View>
           </View>
         )}
       />
 
+      {/* create new workout modal */}
       {isModalVisible && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -148,6 +173,29 @@ return (
         </View>
       )}
 
+      {/* rename workout plan modal */}
+      {isRenameVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Rename workout plan</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Plan name"
+              value={renameText}
+              onChangeText={setRenameText}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={saveRenamePlan} style={styles.modalButtonConfirm}>
+                <Text>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
     </SafeAreaView>
   );
 }
@@ -158,7 +206,7 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: '#fff',
   },
-  
+
   cardWrapper: {
     marginBottom: 16,
   },
@@ -270,5 +318,14 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 6,
     backgroundColor: '#fff',
+  },
+
+  actionsRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+
+  iconSpacing: { 
+    marginLeft: 8 
   },
 });

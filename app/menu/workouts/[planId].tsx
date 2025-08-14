@@ -20,6 +20,10 @@ export default function WorkoutsScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false); // for "create plan"
   const [newWorkoutName, setNewWorkoutName] = useState('');
 
+  const [isRenameVisible, setIsRenameVisible] = useState(false);
+  const [renameText, setRenameText] = useState('');
+  const [renameTarget, setRenameTarget] = useState<{ id: number; name: string } | null>(null);
+
   // the header with 3 dots i.e. management mode
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -49,6 +53,23 @@ export default function WorkoutsScreen() {
   const handleAddNew = () => {
     setNewWorkoutName('');
     setIsModalVisible(true);
+  };
+
+  const openRenameWorkout = (id: number, name: string) => {
+    setRenameTarget({ id, name });
+    setRenameText(name);
+    setIsRenameVisible(true);
+  };
+
+  const saveRenameWorkout = async () => {
+    if (!renameTarget) return;
+    const name = renameText.trim();
+    if (!name || name === renameTarget.name) { setIsRenameVisible(false); setRenameTarget(null); return; }
+    await workoutService.changeWorkoutName(renameTarget.id, name);
+    const list = await workoutService.getWorkoutsOfWorkoutPlan(numericPlanId);
+    setWorkouts(list);
+    setIsRenameVisible(false);
+    setRenameTarget(null);
   };
 
   const confirmRemoveWorkout = (workoutId: number, name: string) => {
@@ -99,18 +120,28 @@ export default function WorkoutsScreen() {
             </TouchableOpacity>
 
             {isManaging && (
-              <Pressable
-                onPress={() => confirmRemoveWorkout(item.id, item.name)}
-                style={styles.headerIconBtn}
-                hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
-              >
-                <Ionicons name="trash-outline" size={16} />
-              </Pressable>
+              <View style={styles.actionsRight}>
+                <Pressable
+                  onPress={() => openRenameWorkout(item.id, item.name)}
+                  style={styles.headerIconBtn}
+                  hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                >
+                  <Ionicons name="create-outline" size={16} />
+                </Pressable>
+                <Pressable
+                  onPress={() => confirmRemoveWorkout(item.id, item.name)}
+                  style={[styles.headerIconBtn, styles.iconSpacing]}
+                  hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                >
+                  <Ionicons name="trash-outline" size={16} />
+                </Pressable>
+              </View>
             )}
           </View>
         )}
       />
 
+      {/* create new workout modal */}
             {isModalVisible && (
               <View style={styles.modalOverlay}>
                 <View style={styles.modal}>
@@ -137,6 +168,29 @@ export default function WorkoutsScreen() {
                 </View>
               </View>
             )}
+
+      {/* rename workout plan modal */}
+      {isRenameVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Rename workout</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Workout name"
+              value={renameText}
+              onChangeText={setRenameText}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={saveRenameWorkout} style={styles.modalButtonConfirm}>
+                <Text>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -252,4 +306,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#fff',
   },
+
+actionsRight: { 
+  flexDirection: 'row', 
+  alignItems: 'center' 
+},
+
+iconSpacing: { 
+  marginLeft: 8 
+},
 });

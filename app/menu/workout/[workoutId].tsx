@@ -44,6 +44,10 @@ export default function SessionScreen() {
   const [edited, setEdited] = useState<EditableSessionExercise[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const [isRenameVisible, setIsRenameVisible] = useState(false);
+  const [renameText, setRenameText] = useState('');
+  const [renameTarget, setRenameTarget] = useState<{ weid: number; oldName: string } | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
@@ -169,6 +173,30 @@ export default function SessionScreen() {
     );
   };
 
+  const openRenameExercise = (exIdx: number) => {
+    const weid = edited[exIdx].weid;
+    const oldName = edited[exIdx].exercise.name;
+    setRenameTarget({ weid, oldName });
+    setRenameText(oldName);
+    setIsRenameVisible(true);
+  };
+
+  const saveRenameExercise = async () => {
+    if (!renameTarget) return;
+    const newName = renameText.trim();
+    if (!newName || newName === renameTarget.oldName) {
+      setIsRenameVisible(false);
+      setRenameTarget(null);
+      return;
+    }
+    await workoutService.changeExerciseName(renameTarget.weid, newName);
+    const refreshed = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+    setExercises(refreshed);
+    if (openExercise === renameTarget.oldName) setOpenExercise(newName);
+    setIsRenameVisible(false);
+    setRenameTarget(null);
+  };
+
   // original numeric values by set id for fallbacks
   const originalById = useMemo(() => {
     const m = new Map<number, { weight?: number; reps?: number; rir?: number; percentage?: number; weid?: number }>();
@@ -244,9 +272,7 @@ export default function SessionScreen() {
 
               <View style={styles.exerciseTitleRow}>
                 <TouchableOpacity
-                  onPress={() =>
-                    setOpenExercise(isOpen ? null : exercise.exercise.name)
-                  }
+                  onPress={() => setOpenExercise(isOpen ? null : exercise.exercise.name)}
                 >
                   <Text style={styles.exerciseTitle}>
                     {exercise.exercise.name} {isOpen ? '▲' : '▼'}
@@ -254,13 +280,22 @@ export default function SessionScreen() {
                 </TouchableOpacity>
 
                 {isManaging && (
-                  <Pressable
-                    onPress={() => handleRemoveExercise(idx)}
-                    style={styles.headerIconBtn}
-                    hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
-                  >
-                    <Ionicons name="trash-outline" size={16} />
-                  </Pressable>
+                  <View style={styles.actionsRight}>
+                    <Pressable
+                      onPress={() => openRenameExercise(idx)}
+                      style={styles.headerIconBtn}
+                      hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                    >
+                      <Ionicons name="create-outline" size={16} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleRemoveExercise(idx)}
+                      style={[styles.headerIconBtn, styles.iconSpacing]}
+                      hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
+                    >
+                      <Ionicons name="trash-outline" size={16} />
+                    </Pressable>
+                  </View>
                 )}
               </View>
 
@@ -393,6 +428,28 @@ export default function SessionScreen() {
                 style={styles.modalButtonConfirm}
               >
                 <Text>Create</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {isRenameVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Rename exercise</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Exercise name"
+              value={renameText}
+              onChangeText={setRenameText}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={saveRenameExercise} style={styles.modalButtonConfirm}>
+                <Text>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -588,5 +645,14 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 6,
     backgroundColor: '#fff',
+  },
+
+  actionsRight: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  
+  iconSpacing: { 
+    marginLeft: 8 
   },
 });

@@ -8,7 +8,6 @@ import { ExerciseSet } from "@/models/exercise-set";
 export class WorkoutServiceImplementation implements WorkoutService {
     constructor(private repository: WorkoutRepository) {}
     
-    // might want to add 'async' and 'await' in the actual implementations... another thing to study...
     async getWorkoutPlans(): Promise<WorkoutPlan[]> {
         return await this.repository.selectWorkoutPlans();
     }
@@ -110,5 +109,15 @@ export class WorkoutServiceImplementation implements WorkoutService {
     
     async removeWorkoutPlan(workoutPlanId: number): Promise<void> {
         await this.repository.deleteWorkoutPlan(workoutPlanId);
+    }
+
+    async changeExerciseName(exerciseId: number, newExerciseName: string): Promise<void> {
+        await this.repository.updateExerciseName(exerciseId, newExerciseName);
+    }
+    async changeWorkoutName(workoutId: number, newWorkoutName: string): Promise<void> {
+        await this.repository.updateWorkoutName(workoutId, newWorkoutName);
+    }
+    async changeWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void> {
+        await this.repository.updateWorkoutPlanName(workoutPlanId, newWorkoutPlanName);
     }
 }

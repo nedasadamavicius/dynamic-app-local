@@ -37,4 +37,10 @@ export interface WorkoutRepository {
     deleteWorkout(workoutId: number): Promise<void>;
 
     deleteWorkoutPlan(workoutPlanId: number): Promise<void>;
+
+    updateExerciseName(exerciseId: number, newExerciseName: string): Promise<void>;
+
+    updateWorkoutName(workoutId: number, newWorkoutName: string): Promise<void>;
+
+    updateWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void>;
 }

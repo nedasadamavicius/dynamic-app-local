@@ -49,4 +49,10 @@ export interface WorkoutService {
   removeWorkout(workoutId: number): Promise<void>;
 
   removeWorkoutPlan(workoutPlanId: number): Promise<void>;
+
+  changeExerciseName(exerciseId: number, newExerciseName: string): Promise<void>;
+
+  changeWorkoutName(workoutId: number, newWorkoutName: string): Promise<void>;
+
+  changeWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void>;
 }
