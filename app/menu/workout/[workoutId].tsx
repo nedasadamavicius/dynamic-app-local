@@ -59,6 +59,9 @@ export default function SessionScreen() {
   const [numberOfSets, setNumberOfSets] = useState('');
 
   const [ormByEid, setOrmByEid] = useState<Map<number, number>>(new Map());
+  const [ormModal, setOrmModal] = useState<{ visible: boolean; eid: number | null; name: string; weight: string }>({
+    visible: false, eid: null, name: '', weight: ''
+  });
 
   // EFFECTs
   useFocusEffect(
@@ -126,6 +129,16 @@ export default function SessionScreen() {
     setIsModalVisible(true);
   };
 
+  const promptCreateOrm = (eid: number, name: string) =>
+  Alert.alert(
+    '1RM missing',
+    `1RM for "${name}" does not exist. Create it now?`,
+    [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Create', onPress: () => setOrmModal({ visible: true, eid, name, weight: '' }) },
+    ]
+  );
+
   const handleChange = (
     exIdx: number,
     setIdx: number,
@@ -136,6 +149,27 @@ export default function SessionScreen() {
       const copy = [...prev];
       const ex = { ...copy[exIdx] };
       const sets = [...ex.sets];
+
+      if (field === 'percentage') {
+        const pct = Number(String(value ?? '').replace(',', '.')) || 0;
+
+        // update % immediately
+        sets[setIdx] = { ...sets[setIdx], percentage: value };
+        ex.sets = sets;
+        copy[exIdx] = ex;
+
+        // if % > 0 and no ORM → ask first, then maybe open modal
+        if (pct > 0) {
+          const eid = ex.exercise?.id as number | undefined;
+          const hasOrm = !!(eid && (ormByEid.get(eid) ?? 0) > 0);
+          if (!hasOrm && eid) {
+            promptCreateOrm(eid, ex.exercise.name);
+          }
+        }
+
+        return copy;
+      }
+
       sets[setIdx] = { ...sets[setIdx], [field]: value };
       ex.sets = sets;
       copy[exIdx] = ex;
@@ -335,9 +369,9 @@ export default function SessionScreen() {
                       {(() => {
                         const exerciseId = exercise.exercise?.id as number | undefined;
                         const pct = Number(String(edited[idx].sets[setIdx].percentage ?? '').replace(',', '.')) || 0;
-                        const locked = pct > 0;
                         const orm = exerciseId ? (ormByEid.get(exerciseId) ?? 0) : 0;
-                        const derived = locked && orm > 0 ? workoutService.calculateWeight(orm, pct) : undefined;
+                        const locked = pct > 0 && orm > 0; // lock only if ORM exists
+                        const derived = locked ? workoutService.calculateWeight(orm, pct) : undefined;
 
                         return (
                           <TextInput
@@ -482,6 +516,47 @@ export default function SessionScreen() {
                 <Text>Cancel</Text>
               </Pressable>
               <Pressable onPress={saveRenameExercise} style={styles.modalButtonConfirm}>
+                <Text>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {ormModal.visible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Set 1RM for {ormModal.name}</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Enter 1RM weight"
+              keyboardType="numeric"
+              value={ormModal.weight}
+              onChangeText={(t) => setOrmModal(s => ({ ...s, weight: t }))}
+            />
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={() => setOrmModal({ visible: false, eid: null, name: '', weight: '' })}
+                style={styles.modalButtonCancel}
+              >
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={async () => {
+                  const eid = ormModal.eid!;
+                  const w = Number(String(ormModal.weight).replace(',', '.')) || 0;
+                  if (eid && w > 0) {
+                    await workoutService.createOneRepMax(eid, w);
+                    setOrmByEid(prev => {
+                      const next = new Map(prev);
+                      next.set(eid, w);
+                      return next;
+                    });
+                  }
+                  setOrmModal({ visible: false, eid: null, name: '', weight: '' });
+                }}
+                style={styles.modalButtonConfirm}
+              >
                 <Text>Save</Text>
               </Pressable>
             </View>
