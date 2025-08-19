@@ -5,6 +5,7 @@ import { WorkoutExercise } from "@/models/workout-exercise";
 import { WorkoutPlan } from "@/models/workout-plan";
 import { WorkoutRepository } from "./workout-repository";
 import DBManager from "@/db/DBManager";
+import { OneRepMax } from "@/models/one-rep-max";
 
 export class SQLiteWorkoutRepository implements WorkoutRepository {
 
@@ -215,5 +216,38 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     );
   }
 
-  
+  async selectExercises(): Promise<Exercise[]> {
+    const db = (await DBManager.getInstance()).getDB();
+    const result = await db.getAllAsync("SELECT id, name FROM exercise");
+    return result as Exercise[];
+  }
+
+  async insertOneRepMax(exerciseId: number, weight: number): Promise<number> {
+    try {
+      const db = (await DBManager.getInstance()).getDB();
+      const result = await db.runAsync(
+        "INSERT INTO one_rep_max (eid, weight) VALUES (?, ?)",
+        [exerciseId, weight]
+      );
+      return result.lastInsertRowId!;
+    } catch (err) {
+      console.error("SQLite insertOneRepMax failed", err);
+      throw new Error("Failed to insert one-rep max");
+    }
+  }
+
+  async selectOneRepMaxes(): Promise<OneRepMax[]> {
+    const db = (await DBManager.getInstance()).getDB();
+    const result = await db.getAllAsync("SELECT * FROM one_rep_max");
+    return result as OneRepMax[];
+  }
+
+  async selectExerciseOneRepMax(exerciseId: number): Promise<OneRepMax> {
+    const db = (await DBManager.getInstance()).getDB();
+    const result = await db.getFirstAsync(
+      `SELECT weight FROM one_rep_max WHERE eid = ?`,
+      [exerciseId]
+    );
+    return result as OneRepMax;
+  }
 }

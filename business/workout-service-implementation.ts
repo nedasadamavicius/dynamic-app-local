@@ -4,6 +4,9 @@ import { SessionExercise } from "@/models/session-exercise";
 import { WorkoutService } from "./workout-service";
 import { WorkoutRepository } from "@/data/workout-repository";
 import { ExerciseSet } from "@/models/exercise-set";
+import { Exercise } from "@/models/exercise";
+import { OneRepMax } from "@/models/one-rep-max";
+import { ExerciseOneRepMax } from "@/models/exercise-one-rep-max";
 
 export class WorkoutServiceImplementation implements WorkoutService {
     constructor(private repository: WorkoutRepository) {}
@@ -120,4 +123,31 @@ export class WorkoutServiceImplementation implements WorkoutService {
     async changeWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void> {
         await this.repository.updateWorkoutPlanName(workoutPlanId, newWorkoutPlanName);
     }
+
+    async getExercises(): Promise<Exercise[]> {
+        return await this.repository.selectExercises();
+    }
+
+    async createOneRepMax(exerciseId: number, weight: number): Promise<void> {
+        await this.repository.insertOneRepMax(exerciseId, weight);
+    }
+
+    async getOneRepMaxes(): Promise<ExerciseOneRepMax[]> {
+        const oneRepMaxes: OneRepMax[] = await this.repository.selectOneRepMaxes();
+
+        const result: ExerciseOneRepMax[] = [];
+        
+        for (const orm of oneRepMaxes) {
+            const exercise: Exercise | null = await this.repository.selectExercise(orm.eid);
+            result.push({
+            id: orm.id,
+            eid: orm.eid,
+            name: exercise?.name ?? "Unknown exercise",
+            weight: orm.weight,
+            });
+        }
+
+        return result;
+    }
+    
 }

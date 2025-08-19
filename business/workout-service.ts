@@ -1,6 +1,8 @@
 import { WorkoutPlan } from '@/models/workout-plan';
 import { Workout } from '@/models/workout';
 import { SessionExercise } from '@/models/session-exercise';
+import { Exercise } from '@/models/exercise';
+import { OneRepMax } from '@/models/one-rep-max';
 
 export interface WorkoutService {
 
@@ -55,4 +57,10 @@ export interface WorkoutService {
   changeWorkoutName(workoutId: number, newWorkoutName: string): Promise<void>;
 
   changeWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void>;
+
+  getExercises(): Promise<Exercise[]>;
+
+  createOneRepMax(exerciseId: number, weight: number): Promise<void>;
+
+  getOneRepMaxes(): Promise<OneRepMax[]>;
 }

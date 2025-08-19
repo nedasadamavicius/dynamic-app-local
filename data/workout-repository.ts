@@ -1,5 +1,6 @@
 import { Exercise } from "@/models/exercise";
 import { ExerciseSet } from "@/models/exercise-set";
+import { OneRepMax } from "@/models/one-rep-max";
 import { Workout } from "@/models/workout";
 import { WorkoutExercise } from "@/models/workout-exercise";
 import { WorkoutPlan } from "@/models/workout-plan";
@@ -43,4 +44,12 @@ export interface WorkoutRepository {
     updateWorkoutName(workoutId: number, newWorkoutName: string): Promise<void>;
 
     updateWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void>;
+
+    selectExercises(): Promise<Exercise[]>;
+
+    insertOneRepMax(exerciseId: number, weight: number): Promise<number>;
+
+    selectOneRepMaxes(): Promise<OneRepMax[]>;
+
+    selectExerciseOneRepMax(exerciseId: number): Promise<OneRepMax>;
 }

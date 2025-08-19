@@ -45,3 +45,10 @@ create index if not exists idx_workout_wpid on workout(wpid);
 create index if not exists idx_we_wid on workout_exercise(wid);
 create index if not exists idx_we_eid on workout_exercise(eid);
 create index if not exists idx_exercise_set_weid on exercise_set(weid);
+
+create table one_rep_max (
+    id integer primary key autoincrement,
+    eid integer not null unique,
+    weight real default 0.0,
+    foreign key (eid) references exercise(id) on delete cascade
+);
