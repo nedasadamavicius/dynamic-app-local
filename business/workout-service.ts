@@ -63,4 +63,8 @@ export interface WorkoutService {
   createOneRepMax(exerciseId: number, weight: number): Promise<void>;
 
   getOneRepMaxes(): Promise<OneRepMax[]>;
+
+  getExerciseOneRepMax(exerciseId: number): Promise<OneRepMax>;
+
+  calculateWeight(oneRepMax: number, percentage: number): number;
 }

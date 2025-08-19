@@ -39,6 +39,10 @@ export default function SessionScreen() {
   const { workoutId } = useLocalSearchParams();
   const numericWorkoutId = Number(workoutId);
 
+  const navigation = useNavigation();
+  const { isManaging, toggleManaging, setManaging } = useManagementMode();
+
+  // STATEs
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [exercises, setExercises] = useState<SessionExercise[]>([]);
   const [edited, setEdited] = useState<EditableSessionExercise[]>([]);
@@ -48,6 +52,15 @@ export default function SessionScreen() {
   const [renameText, setRenameText] = useState('');
   const [renameTarget, setRenameTarget] = useState<{ weid: number; oldName: string } | null>(null);
 
+  const [openExercise, setOpenExercise] = useState<string | null>(null);
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [newExerciseName, setNewWorkoutName] = useState('');
+  const [numberOfSets, setNumberOfSets] = useState('');
+
+  const [ormByEid, setOrmByEid] = useState<Map<number, number>>(new Map());
+
+  // EFFECTs
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
@@ -63,6 +76,11 @@ export default function SessionScreen() {
             setExercises(ex);
           }
         }
+
+        const orms = await workoutService.getOneRepMaxes(); // [{ eid, weight }]
+        const m = new Map<number, number>();
+        for (const o of orms) m.set(o.eid, Number(o.weight) || 0);
+        setOrmByEid(m);
       };
       load();
 
@@ -91,9 +109,6 @@ export default function SessionScreen() {
     setEdited(stringified);
   }, [exercises]);
 
-  const navigation = useNavigation();
-  const { isManaging, toggleManaging, setManaging } = useManagementMode();
-
   useLayoutEffect(() => {
     navigation.setOptions({
       title: workout?.name ?? '[ Session Name ]',
@@ -105,12 +120,7 @@ export default function SessionScreen() {
     });
   }, [navigation, toggleManaging, workout]);
 
-  const [openExercise, setOpenExercise] = useState<string | null>(null);
-
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [newExerciseName, setNewWorkoutName] = useState('');
-  const [numberOfSets, setNumberOfSets] = useState('');
-
+  // HANDLERs
   const handleAddNew = () => {
     setNewWorkoutName('');
     setIsModalVisible(true);
@@ -225,11 +235,20 @@ export default function SessionScreen() {
       edited.forEach(ex =>
         ex.sets.forEach((s) => {
           const orig = originalById.get(s.id) ?? {};
-          const weight = parseOr(s.weight, Number(orig.weight ?? 0));
+          // const weight = parseOr(s.weight, Number(orig.weight ?? 0));
           const reps = parseOr(s.reps, Number(orig.reps ?? 0));
           const rir = parseOr(s.rir, Number(orig.rir ?? 0));
-          const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
+          // const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
           const weid = Number(s.weid ?? orig.weid ?? 0);
+
+          const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
+          const exerciseId = ex.exercise?.id as number | undefined;
+          const orm = exerciseId ? (ormByEid.get(exerciseId) ?? 0) : 0;
+
+          const weight =
+            percentage > 0 && orm > 0
+              ? workoutService.calculateWeight(orm, percentage)
+              : parseOr(s.weight, Number(orig.weight ?? 0));
 
           tasks.push(
             workoutService.updateExerciseSet(
@@ -313,13 +332,27 @@ export default function SessionScreen() {
                     <View key={set.id} style={styles.setRow}>
                       <Text style={styles.setLabel}>Set #{set.setNumber}</Text>
 
-                      <TextInput
-                        style={[styles.input, isManaging && styles.inputCompact]}
-                        keyboardType="numeric"
-                        editable={!isManaging}
-                        value={edited[idx].sets[setIdx].weight}
-                        onChangeText={(v) => handleChange(idx, setIdx, 'weight', v)}
-                      />
+                      {(() => {
+                        const exerciseId = exercise.exercise?.id as number | undefined;
+                        const pct = Number(String(edited[idx].sets[setIdx].percentage ?? '').replace(',', '.')) || 0;
+                        const locked = pct > 0;
+                        const orm = exerciseId ? (ormByEid.get(exerciseId) ?? 0) : 0;
+                        const derived = locked && orm > 0 ? workoutService.calculateWeight(orm, pct) : undefined;
+
+                        return (
+                          <TextInput
+                            style={[
+                              styles.input,
+                              isManaging && styles.inputCompact,
+                              locked && { backgroundColor: '#eee' }
+                            ]}
+                            keyboardType="numeric"
+                            editable={!isManaging && !locked}
+                            value={locked ? String(derived ?? '') : edited[idx].sets[setIdx].weight}
+                            onChangeText={(v) => handleChange(idx, setIdx, 'weight', v)}
+                          />
+                        );
+                      })()}
 
                       <TextInput
                         style={[styles.input, isManaging && styles.inputCompact]}

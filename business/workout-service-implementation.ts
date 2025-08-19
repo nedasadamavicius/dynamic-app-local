@@ -149,5 +149,22 @@ export class WorkoutServiceImplementation implements WorkoutService {
 
         return result;
     }
+
+    async getExerciseOneRepMax(exerciseId: number): Promise<OneRepMax> {
+        return this.repository.selectExerciseOneRepMax(exerciseId);
+    }
+
+    calculateWeight(oneRepMax: number, percentage: number): number {
+        let weight: number = 0.0
     
+        if (oneRepMax != 0.0) {
+            weight = oneRepMax * (percentage / 100)
+        }
+
+        return weight
+    }
+
+    // what i need to do when i come back:
+    // handle that weights are calculated based on ORM and given %
+    // then make it so that within UI user cannot edit weight field if percentage is greater than 0
 }
