@@ -27,13 +27,13 @@ class DBManager {
     const fileInfo = await FileSystem.getInfoAsync(dbPath);
 
     if (!fileInfo.exists) {
-      console.log('🔧 Initializing database from schema/seed SQL...');
+      // console.log('🔧 Initializing database from schema/seed SQL...'); remove console logs or replace them
       const dbManager = await DBManager.getInstance();
       const db = dbManager.getDB();
       await DBManager.runSQLFile(db, require('../assets/sql/schema.sql'));
       await DBManager.runSQLFile(db, require('../assets/sql/seed.sql'));
     } else {
-      console.log('Database already exists!');
+      // console.log('Database already exists!');
     }
   }
 

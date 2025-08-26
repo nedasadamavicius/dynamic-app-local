@@ -80,6 +80,16 @@ export class WorkoutServiceImplementation implements WorkoutService {
         await this.addSetsToExercise(workoutExerciseId, numberOfSets);
     }
 
+    async addExerciseToWorkout(
+        exerciseId: number,
+        workoutId: number,
+        numberOfSets: number
+    ): Promise<void> {
+        const workoutExerciseId = await this.linkWorkoutToExercise(exerciseId, workoutId);
+
+        await this.addSetsToExercise(workoutExerciseId, numberOfSets);
+    }
+
     async updateExerciseSet(id: number, setNumber: number, weight: number, reps: number, rir: number, percentage: number, weid: number): Promise<void> {
         const exerciseSet: ExerciseSet = {
             id,
@@ -117,9 +127,11 @@ export class WorkoutServiceImplementation implements WorkoutService {
     async changeExerciseName(exerciseId: number, newExerciseName: string): Promise<void> {
         await this.repository.updateExerciseName(exerciseId, newExerciseName);
     }
+
     async changeWorkoutName(workoutId: number, newWorkoutName: string): Promise<void> {
         await this.repository.updateWorkoutName(workoutId, newWorkoutName);
     }
+
     async changeWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void> {
         await this.repository.updateWorkoutPlanName(workoutPlanId, newWorkoutPlanName);
     }

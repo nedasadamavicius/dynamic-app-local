@@ -8,7 +8,8 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Alert
+  Alert,
+  FlatList
 } from 'react-native';
 import { SessionExercise } from '@/models/session-exercise';
 import { Workout } from '@/models/workout';
@@ -32,6 +33,10 @@ type EditableSessionExercise = {
   exercise: SessionExercise['exercise'];
   sets: EditableSet[];
 };
+type ExerciseLite = {
+  id: number;
+  name: string;
+};
 
 export default function SessionScreen() {
   const workoutService = useWorkoutService();
@@ -54,8 +59,11 @@ export default function SessionScreen() {
 
   const [openExercise, setOpenExercise] = useState<string | null>(null);
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [newExerciseName, setNewWorkoutName] = useState('');
+  // picker: select existing or create new
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [allExercises, setAllExercises] = useState<ExerciseLite[]>([]);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<{ id: number | null; name: string } | null>(null);
   const [numberOfSets, setNumberOfSets] = useState('');
 
   const [ormByEid, setOrmByEid] = useState<Map<number, number>>(new Map());
@@ -84,6 +92,10 @@ export default function SessionScreen() {
         const m = new Map<number, number>();
         for (const o of orms) m.set(o.eid, Number(o.weight) || 0);
         setOrmByEid(m);
+
+        // preload existing exercises for picker
+        const list = await workoutService.getExercises();
+        setAllExercises(list?.map(({ id, name }) => ({ id, name })) ?? []);
       };
       load();
 
@@ -124,9 +136,13 @@ export default function SessionScreen() {
   }, [navigation, toggleManaging, workout]);
 
   // HANDLERs
-  const handleAddNew = () => {
-    setNewWorkoutName('');
-    setIsModalVisible(true);
+  const handleAddNew = async () => {
+    setSearch('');
+    setSelected(null);
+    setNumberOfSets('');
+    const list = await workoutService.getExercises();
+    setAllExercises(list?.map(({ id, name }) => ({ id, name })) ?? []);
+    setPickerVisible(true);
   };
 
   const promptCreateOrm = (eid: number, name: string) =>
@@ -254,11 +270,31 @@ export default function SessionScreen() {
     return m;
   }, [exercises]);
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allExercises;
+    return allExercises.filter(e => e.name.toLowerCase().includes(q));
+  }, [search, allExercises]);
+
+  const exactExists = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return false;
+    return allExercises.some(e => e.name.toLowerCase() === q);
+  }, [search, allExercises]);
+
   const parseOr = (raw: string, fallback: number) => {
     const t = String(raw ?? '').replace(',', '.').trim();
     if (t === '') return fallback;
     const n = Number(t);
     return Number.isFinite(n) ? n : fallback;
+  };
+
+  const attachExercise = async (choice: { id: number | null; name: string }, sets: number) => {
+    if (choice.id && (workoutService as any).addExerciseToWorkout) {
+      await (workoutService as any).addExerciseToWorkout(choice.id, numericWorkoutId, sets);
+    } else {
+      await workoutService.createExerciseForWorkout(choice.name, numericWorkoutId, sets);
+    }
   };
 
   const finishSession = async () => {
@@ -269,10 +305,8 @@ export default function SessionScreen() {
       edited.forEach(ex =>
         ex.sets.forEach((s) => {
           const orig = originalById.get(s.id) ?? {};
-          // const weight = parseOr(s.weight, Number(orig.weight ?? 0));
           const reps = parseOr(s.reps, Number(orig.reps ?? 0));
           const rir = parseOr(s.rir, Number(orig.rir ?? 0));
-          // const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
           const weid = Number(s.weid ?? orig.weid ?? 0);
 
           const percentage = parseOr(s.percentage, Number(orig.percentage ?? 0));
@@ -309,8 +343,8 @@ export default function SessionScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView style={styles.main}>
         {isManaging && (
-          <TouchableOpacity style={styles.newExerciseCard} onPress={handleAddNew}>
-            <Text style={styles.exerciseName}>New Exercise</Text>
+          <TouchableOpacity style={styles.addExerciseCard} onPress={handleAddNew}>
+            <Text style={styles.exerciseName}>Add Exercise</Text>
           </TouchableOpacity>
         )}
 
@@ -450,17 +484,53 @@ export default function SessionScreen() {
         })}
       </ScrollView>
 
-      {isModalVisible && (
+      {pickerVisible && (
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Create a new exercise</Text>
+            <Text style={styles.modalTitle}>Add exercise</Text>
 
             <TextInput
               style={styles.modalInput}
-              placeholder="Enter exercise name"
-              value={newExerciseName}
-              onChangeText={setNewWorkoutName}
+              placeholder="Search or type a new exercise"
+              value={search}
+              onChangeText={(t) => { setSearch(t); setSelected(null); }}
             />
+
+            {/* quick create when no exact match */}
+            {search.trim().length > 0 && !exactExists && (
+              <Pressable
+                style={[styles.listRow, styles.createRow]}
+                onPress={() => setSelected({ id: null, name: search.trim() })}
+              >
+                <Ionicons name="add" size={16} />
+                <Text style={styles.listRowText}>Create “{search.trim()}”</Text>
+              </Pressable>
+            )}
+
+            <View style={{ maxHeight: 240, marginBottom: 12 }}>
+              <FlatList
+                keyboardShouldPersistTaps="handled"
+                data={filtered}
+                keyExtractor={(item) => String(item.id)}
+                renderItem={({ item }) => {
+                  const isSel = selected?.id === item.id;
+                  return (
+                    <Pressable
+                      onPress={() => setSelected({ id: item.id, name: item.name })}
+                      style={[styles.listRow, isSel && styles.listRowSelected]}
+                    >
+                      <Text style={styles.listRowText}>{item.name}</Text>
+                      {isSel && <Ionicons name="checkmark" size={16} />}
+                    </Pressable>
+                  );
+                }}
+                ListEmptyComponent={
+                  search.trim().length === 0
+                    ? <Text style={styles.emptyList}>No exercises.</Text>
+                    : <Text style={styles.emptyList}>No matches.</Text>
+                }
+              />
+            </View>
 
             <TextInput
               style={styles.modalInput}
@@ -471,30 +541,24 @@ export default function SessionScreen() {
             />
 
             <View style={styles.modalButtons}>
-              <Pressable
-                onPress={() => setIsModalVisible(false)}
-                style={styles.modalButtonCancel}
-              >
+              <Pressable onPress={() => setPickerVisible(false)} style={styles.modalButtonCancel}>
                 <Text>Cancel</Text>
               </Pressable>
-
               <Pressable
                 onPress={async () => {
-                  const name = newExerciseName.trim();
                   const sets = parseInt(numberOfSets, 10);
+                  const choice = selected ?? { id: null, name: search.trim() };
+                  if (!choice.name || isNaN(sets) || sets <= 0) return;
 
-                  if (!name || isNaN(sets) || sets <= 0) return;
+                  await attachExercise(choice, sets);
 
-                  await workoutService.createExerciseForWorkout(name, numericWorkoutId, sets);
-
-                  const updatedExercises = await workoutService.getExercisesOfWorkout(numericWorkoutId);
-                  setExercises(updatedExercises);
-
-                  setIsModalVisible(false);
+                  const updated = await workoutService.getExercisesOfWorkout(numericWorkoutId);
+                  setExercises(updated);
+                  setPickerVisible(false);
                 }}
                 style={styles.modalButtonConfirm}
               >
-                <Text>Create</Text>
+                <Text>Add</Text>
               </Pressable>
             </View>
           </View>
@@ -656,7 +720,7 @@ const styles = StyleSheet.create({
   cardWrapper: { 
     marginBottom: 16 
   },
-  newExerciseCard: { 
+  addExerciseCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between', 
@@ -763,4 +827,23 @@ const styles = StyleSheet.create({
   iconSpacing: { 
     marginLeft: 8 
   },
+
+listRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  borderWidth: 1,
+  borderColor: '#eee',
+  borderRadius: 8,
+  marginBottom: 8,
+},
+listRowSelected: {
+  borderColor: '#007bff',
+  backgroundColor: '#eef4ff',
+},
+listRowText: { fontSize: 14 },
+createRow: { backgroundColor: '#f7f7f7' },
+emptyList: { textAlign: 'center', color: '#666', paddingVertical: 12 },
 });

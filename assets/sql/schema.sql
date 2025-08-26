@@ -18,7 +18,7 @@ create table workout (
 
 create table exercise (
     id integer primary key autoincrement,
-    name text
+    name text collate nocase unique -- exercise name must be unique no matter the case, no duplicates allowed
 );
 
 create table workout_exercise (
