@@ -52,4 +52,6 @@ export interface WorkoutRepository {
     selectOneRepMaxes(): Promise<OneRepMax[]>;
 
     selectExerciseOneRepMax(exerciseId: number): Promise<OneRepMax>;
+
+    deleteExercise(exerciseId: number): Promise<void>;
 }

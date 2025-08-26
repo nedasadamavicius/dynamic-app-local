@@ -113,7 +113,7 @@ export class WorkoutServiceImplementation implements WorkoutService {
     }
     
     async removeExercise(exerciseId: number): Promise<void> {
-        await this.repository.deleteExerciseSet(exerciseId);
+        await this.repository.deleteExercise(exerciseId);
     }
     
     async removeWorkout(workoutId: number): Promise<void> {

@@ -250,4 +250,14 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     );
     return result as OneRepMax;
   }
+
+  async deleteExercise(exerciseId: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `DELETE
+       FROM exercise
+       WHERE id = ?`,
+      [exerciseId]
+    );
+  }
 }
