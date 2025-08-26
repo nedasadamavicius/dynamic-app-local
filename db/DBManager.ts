@@ -13,6 +13,7 @@ class DBManager {
   static async getInstance(): Promise<DBManager> {
     if (!DBManager.instance) {
       const db = await SQLite.openDatabaseAsync('dp.db');
+      await db.execAsync('PRAGMA foreign_keys = ON;');
       DBManager.instance = new DBManager(db);
     }
     return DBManager.instance;

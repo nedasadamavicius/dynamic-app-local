@@ -1,5 +1,3 @@
-pragma foreign_keys = on;
-
 create table workout_plan (
     id integer primary key autoincrement,
     name text,
