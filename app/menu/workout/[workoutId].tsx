@@ -17,6 +17,7 @@ import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Settings } from '@/models/settings';
 
 // editable types (string fields for numeric inputs)
 type EditableSet = {
@@ -74,7 +75,11 @@ export default function SessionScreen() {
   });
 
   // derive once-only counter for sessions since last deload
-  const sessionsSinceDeload = workout?.counter;
+  const sessionsSinceDeload = workout?.counter?? 0;
+
+  // settings state
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const deloadPromptedRef = useRef(false);
 
   // EFFECTs
   useFocusEffect(
@@ -83,13 +88,15 @@ export default function SessionScreen() {
 
       const load = async () => {
         if (!isNaN(numericWorkoutId)) {
-          const [w, ex] = await Promise.all([
+          const [w, ex, s] = await Promise.all([
             workoutService.getWorkout(numericWorkoutId),
             workoutService.getExercisesOfWorkout(numericWorkoutId),
+            workoutService.getSettings()
           ]);
           if (isMounted) {
             setWorkout(w);
             setExercises(ex);
+            setSettings(s);
           }
         }
 
@@ -110,6 +117,37 @@ export default function SessionScreen() {
       };
     }, [numericWorkoutId])
   );
+
+  // when both workout & settings are ready, check and prompt once
+  useEffect(() => {
+    if (!workout || !settings || deloadPromptedRef.current) return;
+
+    const counter = workout.counter ?? 0;
+    const N = settings.deloadEverySessions ?? 0;
+    const due = settings.deloadEnabled && N > 0 && counter >= N;
+
+    if (!due) return;
+
+    deloadPromptedRef.current = true;
+
+    Alert.alert(
+    'Deload suggested',
+    'You completed the last cycle. Deload this session? (counter will reset)',
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => { /* continue as normal */ } },
+        {
+          text: 'Deload now',
+          style: 'destructive',
+          onPress: async () => {
+            await workoutService.resetWorkoutCounter(numericWorkoutId);
+
+            // load temporary deload adjusted workout NEXT
+            navigation.goBack(); // exit session for now...
+          },
+        },
+      ]
+    );
+  }, [workout, settings, navigation, numericWorkoutId]);
 
   // keep local editable copy in sync (numeric -> string)
   useEffect(() => {
@@ -393,7 +431,7 @@ export default function SessionScreen() {
 
       await Promise.all(tasks);
 
-      await workoutService.incrementWorkoutCounter(numericWorkoutId);
+      await workoutService.incrementWorkoutCounter(numericWorkoutId, sessionsSinceDeload);
 
       navigation.goBack();
     

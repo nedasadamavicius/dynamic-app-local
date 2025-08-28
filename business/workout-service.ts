@@ -82,5 +82,7 @@ export interface WorkoutService {
 
   updateSettings(deloadEnabled: boolean, deloadEverySessions: number): Promise<void>;
 
-  incrementWorkoutCounter(workoutId: number): Promise<void>;
+  incrementWorkoutCounter(workoutId: number, currentValue: number): Promise<void>;
+
+  resetWorkoutCounter(workoutId: number): Promise<void>;
 }

@@ -197,7 +197,12 @@ export class WorkoutServiceImplementation implements WorkoutService {
         await this.repository.updateExerciseSetField(setId, field, value);
     }
 
-    async incrementWorkoutCounter(workoutId: number): Promise<void> {
-        return this.repository.updateWorkoutCounter(workoutId);
+    async incrementWorkoutCounter(workoutId: number, currentValue: number): Promise<void> {
+        currentValue++;
+        await this.repository.updateWorkoutCounter(workoutId, currentValue);
+    }
+
+    async resetWorkoutCounter(workoutId: number): Promise<void> {
+        await this.repository.updateWorkoutCounter(workoutId, 0);
     }
 }

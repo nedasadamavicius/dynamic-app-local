@@ -318,14 +318,13 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
     );
   }
 
-  // increment the workout's counter by 1
-  async updateWorkoutCounter(workoutId: number): Promise<void> {
+  async updateWorkoutCounter(workoutId: number, value: number): Promise<void> {
     const db = (await DBManager.getInstance()).getDB();
     await db.runAsync(
       `UPDATE workout
-       SET counter = counter + 1
+       SET counter = ?
        WHERE id = ?`,
-      [workoutId]
+      [value, workoutId]
     );
   }
 }
