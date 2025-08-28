@@ -46,4 +46,6 @@ insert into exercise_set (set_number, weid) values (1, 4), (2, 4), (3, 4);
 insert into exercise_set (set_number, weid) values (1, 5), (2, 5), (3, 5);
 insert into exercise_set (set_number, weid) values (1, 6), (2, 6), (3, 6);
 
+insert into settings (id) values (1);
+
 commit;

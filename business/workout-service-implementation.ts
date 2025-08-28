@@ -7,6 +7,7 @@ import { ExerciseSet } from "@/models/exercise-set";
 import { Exercise } from "@/models/exercise";
 import { OneRepMax } from "@/models/one-rep-max";
 import { ExerciseOneRepMax } from "@/models/exercise-one-rep-max";
+import { Settings } from "@/models/settings";
 
 export class WorkoutServiceImplementation implements WorkoutService {
     constructor(private repository: WorkoutRepository) {}
@@ -171,5 +172,18 @@ export class WorkoutServiceImplementation implements WorkoutService {
         const raw = oneRepMax * (percentage / 100);
 
         return Math.round(raw * 100) / 100; // round to 2 decimals
+    }
+
+    async getSettings(): Promise<Settings> {
+        return this.repository.selectSettings();
+    }
+
+    async updateSettings(deloadEnabled: boolean, deloadEverySessions: number): Promise<void> {
+        const settings: Settings = {
+            id: 1,
+            deloadEnabled,
+            deloadEverySessions
+        };
+        await this.repository.updateSettings(settings);
     }
 }

@@ -1,12 +1,14 @@
 import { Exercise } from "@/models/exercise";
 import { ExerciseSet } from "@/models/exercise-set";
 import { OneRepMax } from "@/models/one-rep-max";
+import { Settings } from "@/models/settings";
 import { Workout } from "@/models/workout";
 import { WorkoutExercise } from "@/models/workout-exercise";
 import { WorkoutPlan } from "@/models/workout-plan";
 
 export interface WorkoutRepository {
 
+    // selects
     selectWorkoutPlans(): Promise<WorkoutPlan[]>;
 
     selectWorkoutsPerWorkoutPlan(workoutPlanId: number): Promise<Workout[]>;
@@ -19,6 +21,15 @@ export interface WorkoutRepository {
 
     selectExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]>;
 
+    selectOneRepMaxes(): Promise<OneRepMax[]>;
+
+    selectExerciseOneRepMax(exerciseId: number): Promise<OneRepMax>;
+
+    selectExercises(): Promise<Exercise[]>;
+
+    selectSettings(): Promise<Settings>;
+
+    // inserts
     insertWorkoutPlan(workoutPlanName: string): Promise<number>;
 
     insertWorkout(workoutName: string, workoutPlanId: number): Promise<number>;
@@ -29,15 +40,10 @@ export interface WorkoutRepository {
 
     insertExerciseSet(setNumber: number, workoutExerciseId: number): Promise<number>;
 
+    insertOneRepMax(exerciseId: number, weight: number): Promise<number>;
+
+    // updates
     updateExerciseSet(exerciseSet: ExerciseSet): Promise<void>;
-
-    deleteExerciseSet(setId: number): Promise<void>;
-
-    deleteWorkoutExercise(workoutExerciseId: number): Promise<void>;
-
-    deleteWorkout(workoutId: number): Promise<void>;
-
-    deleteWorkoutPlan(workoutPlanId: number): Promise<void>;
 
     updateExerciseName(exerciseId: number, newExerciseName: string): Promise<void>;
 
@@ -45,13 +51,16 @@ export interface WorkoutRepository {
 
     updateWorkoutPlanName(workoutPlanId: number, newWorkoutPlanName: string): Promise<void>;
 
-    selectExercises(): Promise<Exercise[]>;
+    updateSettings(settings: Settings): Promise<void>;
 
-    insertOneRepMax(exerciseId: number, weight: number): Promise<number>;
+    // deletes
+    deleteExerciseSet(setId: number): Promise<void>;
 
-    selectOneRepMaxes(): Promise<OneRepMax[]>;
+    deleteWorkoutExercise(workoutExerciseId: number): Promise<void>;
 
-    selectExerciseOneRepMax(exerciseId: number): Promise<OneRepMax>;
+    deleteWorkout(workoutId: number): Promise<void>;
+
+    deleteWorkoutPlan(workoutPlanId: number): Promise<void>;
 
     deleteExercise(exerciseId: number): Promise<void>;
 }

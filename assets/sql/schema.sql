@@ -50,3 +50,9 @@ create table one_rep_max (
     weight real default 0.0,
     foreign key (eid) references exercise(id) on delete cascade
 );
+
+create table settings (
+    id integer primary key check (id = 1),
+    deload_enabled boolean default 0,
+    deload_every_sessions integer default 0
+);

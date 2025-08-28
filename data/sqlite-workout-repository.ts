@@ -6,6 +6,7 @@ import { WorkoutPlan } from "@/models/workout-plan";
 import { WorkoutRepository } from "./workout-repository";
 import DBManager from "@/db/DBManager";
 import { OneRepMax } from "@/models/one-rep-max";
+import { Settings } from "@/models/settings";
 
 export class SQLiteWorkoutRepository implements WorkoutRepository {
 
@@ -258,6 +259,41 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
        FROM exercise
        WHERE id = ?`,
       [exerciseId]
+    );
+  }
+
+  async selectSettings(): Promise<Settings> {
+    const db = (await DBManager.getInstance()).getDB();
+
+    type RawSettingsRow = {
+      id: number;
+      deload_enabled: number;           // 0/1 in DB
+      deload_every_sessions: number;    // int in DB
+    };
+
+    const row: RawSettingsRow = await db.getFirstAsync(
+      `SELECT *
+      FROM settings
+      WHERE id = 1
+      LIMIT 1`
+    ) as RawSettingsRow; // can do, cause its always there
+
+    const result: Settings = {
+      id: row.id,
+      deloadEnabled: !!row.deload_enabled, // the !! converts 0/1 to boolean false/true
+      deloadEverySessions: row.deload_every_sessions,
+    };
+
+    return result;
+  }
+
+  async updateSettings(settings: Settings): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+    await db.runAsync(
+      `UPDATE settings
+       SET deload_enabled = ?, deload_every_sessions = ?
+       WHERE id = 1`,
+      [settings.deloadEnabled, settings.deloadEverySessions]
     );
   }
 }
