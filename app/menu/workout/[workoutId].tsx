@@ -73,6 +73,9 @@ export default function SessionScreen() {
     visible: false, eid: null, name: '', weight: ''
   });
 
+  // derive once-only counter for sessions since last deload
+  const sessionsSinceDeload = workout?.counter;
+
   // EFFECTs
   useFocusEffect(
     useCallback(() => {
@@ -352,9 +355,12 @@ export default function SessionScreen() {
 
   const finishSession = async () => {
     if (saving) return;
+
     setSaving(true);
+    
     try {
       const tasks: Promise<void>[] = [];
+    
       edited.forEach(ex =>
         ex.sets.forEach((s) => {
           const orig = originalById.get(s.id) ?? {};
@@ -384,9 +390,15 @@ export default function SessionScreen() {
           );
         })
       );
+
       await Promise.all(tasks);
-      const updated = await workoutService.getExercisesOfWorkout(numericWorkoutId);
-      setExercises(updated);
+
+      await workoutService.incrementWorkoutCounter(numericWorkoutId);
+
+      navigation.goBack();
+    
+    } catch {
+      Alert.alert('Error', 'Could not finish session. Try again.');
     } finally {
       setSaving(false);
     }
@@ -394,6 +406,13 @@ export default function SessionScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+
+      <View style={{ paddingVertical: 8, paddingHorizontal: 12 }}>
+        <Text style={{ fontWeight: '600' }}>
+          Sessions since deload: {sessionsSinceDeload}
+        </Text>
+      </View>
+      
       <ScrollView style={styles.main}>
         {isManaging && (
           <TouchableOpacity style={styles.addExerciseCard} onPress={handleAddNew}>
@@ -691,11 +710,21 @@ export default function SessionScreen() {
 
       <TouchableOpacity
         style={[styles.finishButton, saving && { opacity: 0.6 }]}
-        onPress={finishSession}
         disabled={saving}
+        onPress={() => {
+          Alert.alert(
+            'End Session',
+            'Finish this session?\n\nThis will save all changes and increment days since last deload.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Finish', style: 'destructive', onPress: finishSession },
+            ]
+          );
+        }}
       >
         <Text style={styles.finishText}>{saving ? 'Saving…' : 'Finish Session'}</Text>
       </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
