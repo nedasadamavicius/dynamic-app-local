@@ -167,11 +167,17 @@ export class WorkoutServiceImplementation implements WorkoutService {
         return this.repository.selectExerciseOneRepMax(exerciseId);
     }
 
-    calculateWeight(oneRepMax: number, percentage: number): number {
-        if (!oneRepMax) return 0;
+    // Round to usable plate increments (default: 2.5 kg)
+    // ORM=140, 76.7% → raw=107.38 → 107.5
+    // ORM=140, 75.56% → raw=105.78 → 105.0
+    calculateWeight(oneRepMax: number, percentage: number, step = 2.5): number {    
+        if (!oneRepMax || !percentage) return 0;
+        
         const raw = oneRepMax * (percentage / 100);
-
-        return Math.round(raw * 100) / 100; // round to 2 decimals
+        
+        const rounded = Math.round(raw / step) * step; // nearest usable increment
+        
+        return Number(rounded.toFixed(2)); // keep .5 or .0 nicely
     }
 
     async getSettings(): Promise<Settings> {
