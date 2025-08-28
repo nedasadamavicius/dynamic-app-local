@@ -52,6 +52,12 @@ export interface WorkoutService {
 
   getExercises(): Promise<Exercise[]>;
 
+  updateExerciseSetField(
+    setId: number, 
+    field: 'weight' | 'reps' | 'rir' | 'percentage', 
+    value: number
+  ): Promise<void>;
+
   // workout & exercise related methods
   getExercisesOfWorkout(workoutId: number): Promise<SessionExercise[]>;
 

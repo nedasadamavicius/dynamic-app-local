@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import { useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import {
   View,
@@ -37,6 +37,8 @@ type ExerciseLite = {
   id: number;
   name: string;
 };
+
+type CellField = 'weight' | 'reps' | 'rir' | 'percentage';
 
 export default function SessionScreen() {
   const workoutService = useWorkoutService();
@@ -134,6 +136,57 @@ export default function SessionScreen() {
       ),
     });
   }, [navigation, toggleManaging, workout]);
+
+  // cache last-saved numeric values per cell to skip no-op writes
+  const savedValuesRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    const map = new Map<string, number>();
+    exercises.forEach(ex => ex.sets.forEach(s => {
+      if (s.weight != null)      map.set(`${s.id}:weight`, Number(s.weight));
+      if (s.reps != null)        map.set(`${s.id}:reps`, Number(s.reps));
+      if (s.rir != null)         map.set(`${s.id}:rir`, Number(s.rir));
+      if (s.percentage != null)  map.set(`${s.id}:percentage`, Number(s.percentage));
+    }));
+    savedValuesRef.current = map;
+  }, [exercises]);
+
+  const parseField = (field: CellField, raw: string): number => {
+    const t = String(raw ?? '').replace(',', '.').trim();
+    if (t === '') return 0;
+    let n = Number(t);
+    if (!Number.isFinite(n)) n = 0;
+    if (field === 'reps' || field === 'rir') return Math.max(0, Math.trunc(n));
+    if (field === 'percentage') return Math.min(100, Math.max(0, Math.round(n * 100) / 100));
+    // weight
+    return Math.max(0, Math.round(n * 100) / 100);
+  };
+
+  const saveCell = async (exIdx: number, setIdx: number, field: CellField) => {
+    try {
+      const set = edited[exIdx].sets[setIdx];
+      const setId = set.id;
+      const numeric = parseField(field, (set as any)[field]);
+
+      // skip if unchanged vs last saved
+      const key = `${setId}:${field}`;
+      const prev = savedValuesRef.current.get(key);
+      if (prev !== undefined && prev === numeric) return;
+
+      // don't persist weight when locked by % + ORM
+      if (field === 'weight') {
+        const exerciseId = edited[exIdx].exercise?.id as number | undefined;
+        const pct = parseField('percentage', edited[exIdx].sets[setIdx].percentage);
+        const orm = exerciseId ? (ormByEid.get(exerciseId) ?? 0) : 0;
+        if (pct > 0 && orm > 0) return;
+      }
+
+      await workoutService.updateExerciseSetField(setId, field, numeric);
+      savedValuesRef.current.set(key, numeric);
+    } catch {
+      Alert.alert('Save failed', 'Could not save this change. Try again.');
+    }
+  };
 
   // HANDLERs
   const handleAddNew = async () => {
@@ -418,6 +471,8 @@ export default function SessionScreen() {
                             editable={!isManaging && !locked}
                             value={locked ? String(derived ?? '') : edited[idx].sets[setIdx].weight}
                             onChangeText={(v) => handleChange(idx, setIdx, 'weight', v)}
+                            onEndEditing={() => saveCell(idx, setIdx, 'weight')}
+                            onSubmitEditing={() => saveCell(idx, setIdx, 'weight')}
                           />
                         );
                       })()}
@@ -428,6 +483,8 @@ export default function SessionScreen() {
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].reps}
                         onChangeText={(v) => handleChange(idx, setIdx, 'reps', v)}
+                        onEndEditing={() => saveCell(idx, setIdx, 'reps')}
+                        onSubmitEditing={() => saveCell(idx, setIdx, 'reps')}
                       />
 
                       <TextInput
@@ -436,6 +493,8 @@ export default function SessionScreen() {
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].rir}
                         onChangeText={(v) => handleChange(idx, setIdx, 'rir', v)}
+                        onEndEditing={() => saveCell(idx, setIdx, 'rir')}
+                        onSubmitEditing={() => saveCell(idx, setIdx, 'rir')}
                       />
 
                       <TextInput
@@ -444,6 +503,8 @@ export default function SessionScreen() {
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].percentage}
                         onChangeText={(v) => handleChange(idx, setIdx, 'percentage', v)}
+                        onEndEditing={() => saveCell(idx, setIdx, 'percentage')}
+                        onSubmitEditing={() => saveCell(idx, setIdx, 'percentage')}
                       />
 
                       {isManaging && (

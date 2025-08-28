@@ -296,4 +296,26 @@ export class SQLiteWorkoutRepository implements WorkoutRepository {
       [settings.deloadEnabled, settings.deloadEverySessions]
     );
   }
+
+  // Update a single field of an exercise set (weight, reps, rir, percentage)
+  async updateExerciseSetField(setId: number, field: 'weight'|'reps'|'rir'|'percentage', value: number): Promise<void> {
+    const db = (await DBManager.getInstance()).getDB();
+
+    const allowed: Record<typeof field, string> = { // whitelist allowed columns, prevent SQL injection
+      weight: 'weight',
+      reps: 'reps',
+      rir: 'rir',
+      percentage: 'percentage',
+    };
+
+    const column = allowed[field];
+
+    await db.runAsync(
+      `UPDATE exercise_set
+       SET ${column} = ?
+       WHERE id = ?`,
+      [value, setId]
+    );
+  }
+
 }

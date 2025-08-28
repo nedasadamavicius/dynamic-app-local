@@ -53,6 +53,8 @@ export interface WorkoutRepository {
 
     updateSettings(settings: Settings): Promise<void>;
 
+    updateExerciseSetField(setId: number, field: 'weight'|'reps'|'rir'|'percentage', value: number): Promise<void>;
+
     // deletes
     deleteExerciseSet(setId: number): Promise<void>;
 

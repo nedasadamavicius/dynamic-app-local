@@ -186,4 +186,8 @@ export class WorkoutServiceImplementation implements WorkoutService {
         };
         await this.repository.updateSettings(settings);
     }
+
+    async updateExerciseSetField(setId: number, field: 'weight' | 'reps' | 'rir' | 'percentage', value: number): Promise<void> {
+        await this.repository.updateExerciseSetField(setId, field, value);
+    }
 }

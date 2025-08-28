@@ -54,5 +54,5 @@ create table one_rep_max (
 create table settings (
     id integer primary key check (id = 1),
     deload_enabled boolean default 0,
-    deload_every_sessions integer default 0
+    deload_every_sessions integer default 3
 );
