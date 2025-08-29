@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState, useRef } from 'react';
-import { useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useFocusEffect, useRouter, type Href } from 'expo-router';
 import {
   View,
   Text,
@@ -42,6 +42,7 @@ type ExerciseLite = {
 type CellField = 'weight' | 'reps' | 'rir' | 'percentage';
 
 export default function SessionScreen() {
+  const router = useRouter();
   const workoutService = useWorkoutService();
 
   const { workoutId } = useLocalSearchParams();
@@ -130,24 +131,22 @@ export default function SessionScreen() {
 
     deloadPromptedRef.current = true;
 
+
     Alert.alert(
-    'Deload suggested',
-    'You completed the last cycle. Deload this session? (counter will reset)',
+      'Deload suggested',
+      'You completed the last cycle. Deload this session? (counter will reset)',
       [
-        { text: 'Cancel', style: 'cancel', onPress: () => { /* continue as normal */ } },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Deload now',
           style: 'destructive',
-          onPress: async () => {
-            await workoutService.resetWorkoutCounter(numericWorkoutId);
-
-            // load temporary deload adjusted workout NEXT
-            navigation.goBack(); // exit session for now...
+          onPress: () => {
+            router.push((`/menu/deload/${workoutId}` as Href)); // use the string param directly
           },
         },
       ]
     );
-  }, [workout, settings, navigation, numericWorkoutId]);
+  }, [workout, settings, router, workoutId]);
 
   // keep local editable copy in sync (numeric -> string)
   useEffect(() => {
@@ -433,7 +432,7 @@ export default function SessionScreen() {
 
       await workoutService.incrementWorkoutCounter(numericWorkoutId, sessionsSinceDeload);
 
-      navigation.goBack();
+      router.back();
     
     } catch {
       Alert.alert('Error', 'Could not finish session. Try again.');
@@ -444,12 +443,14 @@ export default function SessionScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-
-      <View style={{ paddingVertical: 8, paddingHorizontal: 12 }}>
-        <Text style={{ fontWeight: '600' }}>
-          Sessions since deload: {sessionsSinceDeload}
-        </Text>
-      </View>
+      
+      {settings?.deloadEnabled && (
+        <View style={{ paddingVertical: 8, paddingHorizontal: 12 }}>
+          <Text style={{ fontWeight: '600' }}>
+            Sessions since deload: {sessionsSinceDeload}
+          </Text>
+        </View>
+      )}
       
       <ScrollView style={styles.main}>
         {isManaging && (

@@ -205,4 +205,54 @@ export class WorkoutServiceImplementation implements WorkoutService {
     async resetWorkoutCounter(workoutId: number): Promise<void> {
         await this.repository.updateWorkoutCounter(workoutId, 0);
     }
+
+    private clamp2dp(n: number): number {
+    return Math.round(n * 100) / 100;
+    }
+
+    private roundToStep(n: number, step = 2.5): number {
+    return Math.round(n / step) * step;
+    }
+
+    async getDeloadedExercises(workoutId: number): Promise<SessionExercise[]> {
+        const base = await this.getExercisesOfWorkout(workoutId);
+        const factor = 0.8; // −20% intensity
+        const targetRir = 4; // RPE ~6 → RIR 4
+
+        // return a deep-copied, adjusted model
+        return base.map(ex => ({
+            weid: ex.weid,
+            exercise: { ...ex.exercise },
+            sets: ex.sets.map(s => {
+            const pct = Number(s.percentage || 0);
+            if (pct > 0) {
+                // % mode → reduce % by 20%, set RIR=4, keep reps same.
+                const newPct = this.clamp2dp(Math.max(0, Math.min(100, pct * factor)));
+                return {
+                id: s.id,
+                setNumber: s.setNumber,
+                weid: s.weid,
+                // weight will be derived in UI from ORM; zero here to avoid misleading stored numbers
+                weight: 0,
+                reps: s.reps,
+                rir: targetRir,
+                percentage: newPct,
+                } as ExerciseSet;
+            } else {
+                // weight mode → suggest last weight * 0.8, rounded to 2.5kg step; set RIR=4; reps same.
+                const last = Number(s.weight || 0);
+                const suggested = last > 0 ? this.roundToStep(last * factor, 2.5) : 0;
+                return {
+                id: s.id,
+                setNumber: s.setNumber,
+                weid: s.weid,
+                weight: suggested,
+                reps: s.reps,
+                rir: targetRir,
+                percentage: 0,
+                } as ExerciseSet;
+            }
+            }),
+        }));
+    }
 }
