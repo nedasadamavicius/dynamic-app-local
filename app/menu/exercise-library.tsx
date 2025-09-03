@@ -17,8 +17,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useWorkoutService } from "@/contexts/WorkoutServiceContext";
 import { useManagementMode } from "@/contexts/ManagementModeContext";
 import { Exercise } from "@/models/exercise";
+import { useAppTheme } from "@/themes/theme";
 
 export default function ExercisesScreen() {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const workoutService = useWorkoutService();
   const { isManaging, toggleManaging, setManaging } = useManagementMode();
@@ -30,9 +32,11 @@ export default function ExercisesScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: "Exercise Library",
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
       headerRight: () => (
         <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-          <Ionicons name="ellipsis-vertical" size={24} />
+          <Ionicons name="ellipsis-vertical" size={24} color={ theme.text } />
         </Pressable>
       ),
     });
@@ -89,22 +93,22 @@ export default function ExercisesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
       <FlatList
         data={exercises}
         keyExtractor={(item) => String((item as any).id ?? (item as any).eid)}
         contentContainerStyle={{ gap: 12, paddingBottom: 24 }}
         renderItem={({ item }) => (
-          <View style={[styles.row, isManaging && { opacity: 0.6 }]}>
-            <Text style={styles.name}>{(item as any).name}</Text>
+          <View style={[styles.row, isManaging && { opacity: 0.6 }, { backgroundColor: theme.buttonSecondary }]}>
+            <Text style={[styles.name, { color: theme.text }]}>{(item as any).name}</Text>
 
             {isManaging && (
               <Pressable
                 onPress={() => handleRemove(item)}
-                style={styles.iconBtn}
+                style={[styles.iconBtn, { backgroundColor: theme.iconButtonBg, borderColor: theme.iconButtonBorder }]}
                 hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
               >
-                <Ionicons name="trash-outline" size={18} />
+                <Ionicons name="trash-outline" style={{ color: theme.text }} size={18} />
               </Pressable>
             )}
           </View>
@@ -113,10 +117,10 @@ export default function ExercisesScreen() {
           loading ? (
             <View style={{ paddingVertical: 24, alignItems: "center" }}>
               <ActivityIndicator />
-              <Text style={{ marginTop: 8 }}>Loading exercises…</Text>
+              <Text style={{ marginTop: 8, color: theme.text }}>Loading exercises…</Text>
             </View>
           ) : (
-            <Text>No exercises found.</Text>
+            <Text style={{ color: theme.text }}>No exercises found.</Text>
           )
         }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -126,14 +130,13 @@ export default function ExercisesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#fff" },
+  container: { flex: 1, padding: 24},
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
     borderRadius: 8,
-    backgroundColor: "#eee",
     overflow: "hidden",
   },
   name: { fontSize: 16 },
@@ -143,8 +146,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
-    backgroundColor: "#fff",
   },
 });

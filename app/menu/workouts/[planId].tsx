@@ -99,9 +99,6 @@ export default function WorkoutsScreen() {
         <View style={styles.cardWrapper}>
           <TouchableOpacity style={styles.newPlanCard} onPress={handleAddNew}>
             <Text style={styles.workoutName}>New Workout</Text>
-            {/* <View style={styles.addCircleButton}>
-              <Ionicons name="add" size={14} color="#fff" />
-            </View> */}
           </TouchableOpacity>
         </View>
       )}
@@ -222,9 +219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 14,
-    // backgroundColor: 'rgba(0, 128, 0, 0.05)', // very light green tint
     borderWidth: 1,
-    // borderColor: 'green',
     borderColor: 'black',
     borderStyle: 'dashed',
     borderRadius: 8,
@@ -232,22 +227,6 @@ const styles = StyleSheet.create({
   },
   workoutName: {
     fontSize: 14,
-  },
-  deleteButton: {
-    backgroundColor: 'red',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addCircleButton: {
-    backgroundColor: 'green',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   modalOverlay: {
     position: 'absolute',

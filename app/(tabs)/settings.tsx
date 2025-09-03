@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Switch, TextInput, Alert, ActivityIndicator, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
+import { useAppTheme } from '@/themes/theme';
 
 export default function SettingsScreen() {
   const workoutService = useWorkoutService();
+  const { theme } = useAppTheme();
 
   // DB-loaded only (no UI defaults)
   const [deloadEnabled, setDeloadEnabled] = useState<boolean | undefined>(undefined);
@@ -85,20 +87,20 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
 
       <View style={styles.row}>
-        <Text>Deloads</Text>
+        <Text style={{ color: theme.text }}>Deloads</Text>
         <Switch value={deloadEnabled} onValueChange={onToggle} />
       </View>
 
       {deloadEnabled && (
         <View style={styles.row}>
-          <Text>Deload every</Text>
+          <Text style={{ color: theme.text }}>Deload every</Text>
           <View style={styles.inline}>
             <TextInput
               ref={inputRef}
-              style={styles.input}
+              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
               keyboardType="numeric"
               value={deloadEvery}
               onChangeText={onChangeEvery}
@@ -106,9 +108,8 @@ export default function SettingsScreen() {
               onEndEditing={commitIfChanged}
               returnKeyType="done"
               maxLength={3}
-              blurOnSubmit
             />
-            <Text style={styles.suffix}>sessions</Text>
+            <Text style={[styles.suffix, { color: theme.text }]}>sessions</Text>
           </View>
         </View>
       )}
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 8, width: 90, textAlign: 'center', borderRadius: 6 },
+  input: { borderWidth: 1, padding: 8, width: 90, textAlign: 'center', borderRadius: 6 },
   suffix: { fontSize: 16 },
   // footer: { marginTop: 'auto', alignItems: 'flex-start' },
   // saving: { color: '#b25c00' },

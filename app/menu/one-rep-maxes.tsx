@@ -11,10 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { Exercise } from '@/models/exercise';
-
-type OneRepMax = { id: number; eid: number; weight: number };
+import { OneRepMax } from '@/models/one-rep-max';
+import { useAppTheme } from '@/themes/theme';
 
 export default function OneRepMaxesScreen() {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const workoutService = useWorkoutService();
   const { isManaging, toggleManaging, setManaging } = useManagementMode();
@@ -33,9 +34,11 @@ export default function OneRepMaxesScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'One-Rep Maxes',
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
       headerRight: () => (
         <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-          <Ionicons name="ellipsis-vertical" size={24} />
+          <Ionicons name="ellipsis-vertical" size={24} color={ theme.text } />
         </Pressable>
       ),
     });
@@ -111,23 +114,32 @@ export default function OneRepMaxesScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
       <FlatList
         data={displayItems}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingBottom: 24 }}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
-            <View style={[styles.card, isManaging && { opacity: 0.6 }]}>
+            <View style={[
+              styles.card,
+              { backgroundColor: theme.buttonSecondary, borderColor: theme.border },
+              isManaging && { opacity: 0.6 }
+            ]}>
               <View style={styles.cardMain}>
-                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={[
+                  styles.itemName, 
+                  { color: theme.text }
+                ]}>{item.name}</Text>
               </View>
-              <Text style={styles.weight}>{item.weight}</Text>
+              <Text style={[
+                styles.weight, { color: theme.text }
+              ]}>{item.weight}</Text>
             </View>
           </View>
         )}
         ListEmptyComponent={
-          loading ? <Text>Loading…</Text> : <Text>No one-rep maxes yet.</Text>
+          loading ? <Text style={{ color: theme.text }}>Loading…</Text> : <Text style={{ color: theme.text }}>No one-rep maxes yet.</Text>
         }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -135,8 +147,14 @@ export default function OneRepMaxesScreen() {
         ListHeaderComponent={
           isManaging ? (
             <View style={styles.cardWrapper}>
-              <TouchableOpacity style={styles.newCard} onPress={handleAddNew}>
-                <Text style={styles.itemName}>New One-Rep Max</Text>
+              <TouchableOpacity style={[
+                styles.newCard, 
+                { borderColor: theme.border }
+              ]} onPress={handleAddNew}>
+                <Text style={[
+                  styles.itemName,
+                  { color: theme.muted }
+                ]}>New One-Rep Max</Text>
               </TouchableOpacity>
             </View>
           ) : null
@@ -144,14 +162,23 @@ export default function OneRepMaxesScreen() {
       />
 
       {isModalVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Create a new one-rep max</Text>
+        <View style={[
+          styles.modalOverlay,
+          { backgroundColor: theme.overlay }          
+        ]}>
+          <View style={[
+            styles.modal,
+            { backgroundColor: theme.modalBg, borderColor: theme.border }
+          ]}>
+            <Text style={[
+              styles.modalTitle,
+              { color: theme.text }
+            ]}>Create a new one-rep max</Text>
 
-            <Text style={{ marginBottom: 8 }}>Pick exercise</Text>
+            <Text style={{ marginBottom: 8, color: theme.text }}>Pick exercise</Text>
             {exercisesLoading ? (
               <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-                <ActivityIndicator />
+                <ActivityIndicator color={ theme.accent } />
                 <Text style={{ marginTop: 8 }}>Loading exercises…</Text>
               </View>
             ) : (
@@ -166,32 +193,56 @@ export default function OneRepMaxesScreen() {
                   return (
                     <Pressable
                       onPress={() => setSelectedExerciseId(id)}
-                      style={[styles.option, active && styles.optionActive]}
+                      style={[
+                        styles.option,
+                        { backgroundColor: theme.listRowBg }, 
+                        active && {
+                          backgroundColor: theme.listRowSelectedBg, 
+                          borderColor: theme.listRowSelectedBorder,
+                          borderWidth: 1
+                        }
+                      ]}
                     >
-                      <Text style={[styles.optionText, active && styles.optionTextActive]}>
+                      <Text 
+                        style={[
+                          styles.optionText, 
+                          { color: theme.text },
+                          active && styles.optionTextActive
+                        ]}
+                      >
                         {(item as any).name}
                       </Text>
                     </Pressable>
                   );
                 }}
-                ListEmptyComponent={<Text>No exercises found.</Text>}
+                ListEmptyComponent={<Text style={{ color: theme.listRowEmptyText }}>No exercises found.</Text>}
               />
             )}
 
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Enter weight"
+              placeholderTextColor={ theme.placeholder }
               keyboardType="numeric"
               value={weight}
               onChangeText={setWeight}
             />
 
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => setIsModalVisible(false)} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => setIsModalVisible(false)} 
+                style={[styles.modalButtonCancel, { backgroundColor: theme.buttonSecondary, borderRadius: 6 }]}
+              >
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={createOrm} style={styles.modalButtonConfirm}>
-                <Text>Create</Text>
+              <Pressable 
+                onPress={createOrm} 
+                style={[styles.modalButtonConfirm, { backgroundColor: theme.accent }]}
+              >
+                <Text style={{ color: theme.onAccent }}>Create</Text>
               </Pressable>
             </View>
           </View>
@@ -202,37 +253,115 @@ export default function OneRepMaxesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#fff' },
+  container: { 
+    flex: 1, 
+    padding: 24, 
+    backgroundColor: '#fff' 
+  },
 
-  cardWrapper: { marginBottom: 16 },
+  cardWrapper: { 
+    marginBottom: 16 
+  },
+  
   card: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, backgroundColor: '#eee', borderRadius: 8, overflow: 'hidden',
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    padding: 16, 
+    backgroundColor: '#eee', 
+    borderRadius: 8, 
+    overflow: 'hidden',
   },
-  cardMain: { flex: 1 },
-  newCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 16, borderWidth: 1, borderColor: 'black', borderStyle: 'dashed', borderRadius: 8,
-  },
-  itemName: { fontSize: 16 },
-  weight: { fontSize: 16, fontWeight: '600' },
 
+  cardMain: { 
+    flex: 1 
+  },
+
+  newCard: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    padding: 16, 
+    borderWidth: 1, 
+    borderColor: 'black', 
+    borderStyle: 'dashed', 
+    borderRadius: 8,
+  },
+
+  itemName: { 
+    fontSize: 16 
+  },
+  
+  weight: { 
+    fontSize: 16, 
+    fontWeight: '600' 
+  },
   // modal
   modalOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 10,
+    position: 'absolute', 
+    top: 0, 
+    left: 0, 
+    right: 0, 
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    zIndex: 10,
   },
-  modal: { width: '90%', backgroundColor: '#fff', padding: 20, borderRadius: 10 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  
+  modal: { 
+    width: '90%', 
+    backgroundColor: '#fff', 
+    padding: 20, 
+    borderRadius: 10 
+  },
 
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 6, padding: 10, marginTop: 8, marginBottom: 16 },
+  modalTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 12 
+  },
 
-  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
-  modalButtonCancel: { padding: 10 },
-  modalButtonConfirm: { padding: 10, backgroundColor: '#ccc', borderRadius: 6 },
+  input: { 
+    borderWidth: 1, 
+    borderColor: '#ccc', 
+    borderRadius: 6, 
+    padding: 10, 
+    marginTop: 8, 
+    marginBottom: 16 
+  },
 
-  option: { padding: 10, borderRadius: 6, backgroundColor: '#f5f5f5' },
-  optionActive: { backgroundColor: '#e0e0e0' },
-  optionText: { fontSize: 14 },
-  optionTextActive: { fontWeight: '600' },
+  modalButtons: { 
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', 
+    gap: 12 
+  },
+
+  modalButtonCancel: { 
+    padding: 10 
+  },
+
+  modalButtonConfirm: { 
+    padding: 10, 
+    backgroundColor: '#ccc', 
+    borderRadius: 6 
+  },
+
+  option: { 
+    padding: 10, 
+    borderRadius: 6, 
+    backgroundColor: '#f5f5f5' 
+  },
+
+  optionActive: { 
+    backgroundColor: '#e0e0e0' 
+  },
+
+  optionText: { 
+    fontSize: 14 
+  },
+
+  optionTextActive: { 
+    fontWeight: '600' 
+  },
 });

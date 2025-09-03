@@ -7,8 +7,10 @@ import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/themes/theme';
 
 export default function WorkoutPlansScreen() {
+  const { theme } = useAppTheme();
   const navigation = useNavigation();
   const workoutService = useWorkoutService();
   const router = useRouter();
@@ -29,9 +31,11 @@ export default function WorkoutPlansScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Workout Plans',
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
       headerRight: () => (
         <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-          <Ionicons name="ellipsis-vertical" size={24} />
+          <Ionicons name="ellipsis-vertical" size={24} color={ theme.text } />
         </Pressable>
       ),
     });
@@ -94,16 +98,19 @@ export default function WorkoutPlansScreen() {
   };
 
 return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
 
       {/* Add New Plan card (only in management mode) */}
       {isManaging && (
         <View style={styles.cardWrapper}>
-          <TouchableOpacity style={styles.newPlanCard} onPress={handleAddNew}>
-            <Text style={styles.planName}>New Plan</Text>
-            {/* <View style={styles.addCircleButton}>
-              <Ionicons name="add" size={14} color="#fff" />
-            </View> */}
+          <TouchableOpacity 
+            style={[
+              styles.newPlanCard,
+              { borderColor: theme.dashedBorder }
+            ]} 
+            onPress={handleAddNew}
+          >
+            <Text style={[styles.planName, { color: theme.muted }]}>New Plan</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -113,13 +120,21 @@ return (
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
-            <View style={[styles.card, isManaging && { opacity: 0.6 }]}>
+            <View style={[
+              styles.card, 
+              { backgroundColor: theme.buttonSecondary, borderColor: theme.border }, 
+              isManaging && { opacity: 0.6 }]}
+            >
               <TouchableOpacity
                 style={styles.cardMain}
                 disabled={isManaging}
                 onPress={() => router.push(`/menu/workouts/${item.id}`)}
               >
-                <Text style={styles.planName}>{item.name}</Text>
+                <Text style={[
+                  styles.planName, 
+                  { color: theme.text }
+                  ]}
+                >{item.name}</Text>
               </TouchableOpacity>
 
               {isManaging && (
@@ -240,24 +255,6 @@ const styles = StyleSheet.create({
 
   planName: {
     fontSize: 16,
-  },
-
-  deleteButton: {
-    backgroundColor: 'red',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  addCircleButton: {
-    backgroundColor: 'green',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
   modalOverlay: {
