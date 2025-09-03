@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Settings } from '@/models/settings';
+import { useAppTheme } from '@/themes/theme';
 
 // editable types (string fields for numeric inputs)
 type EditableSet = {
@@ -42,6 +43,7 @@ type ExerciseLite = {
 type CellField = 'weight' | 'reps' | 'rir' | 'percentage';
 
 export default function SessionScreen() {
+  const { theme } = useAppTheme();
   const router = useRouter();
   const workoutService = useWorkoutService();
 
@@ -169,9 +171,11 @@ export default function SessionScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: workout?.name ?? '[ Session Name ]',
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
       headerRight: () => (
         <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-          <Ionicons name="ellipsis-vertical" size={24} />
+          <Ionicons name="ellipsis-vertical" size={24} color={ theme.text } />
         </Pressable>
       ),
     });
@@ -442,11 +446,11 @@ export default function SessionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
       
       {settings?.deloadEnabled && (
         <View style={{ paddingVertical: 8, paddingHorizontal: 12 }}>
-          <Text style={{ fontWeight: '600' }}>
+          <Text style={{ fontWeight: '600', color: theme.text }}>
             Sessions since deload: {sessionsSinceDeload}
           </Text>
         </View>
@@ -454,8 +458,14 @@ export default function SessionScreen() {
       
       <ScrollView style={styles.main}>
         {isManaging && (
-          <TouchableOpacity style={styles.addExerciseCard} onPress={handleAddNew}>
-            <Text style={styles.exerciseName}>Add Exercise</Text>
+          <TouchableOpacity 
+            style={[
+              styles.addExerciseCard,
+              { borderColor: theme.dashedBorder }
+            ]} 
+            onPress={handleAddNew}
+          >
+            <Text style={[ styles.exerciseName, { color: theme.muted }]}>Add Exercise</Text>
           </TouchableOpacity>
         )}
 
@@ -465,14 +475,18 @@ export default function SessionScreen() {
           return (
             <View
               key={exercise.exercise.id ?? idx}
-              style={[styles.exerciseCard, isManaging && { opacity: 0.6 }]}
+              style={[
+                styles.exerciseCard, 
+                { backgroundColor: theme.buttonSecondary, borderColor: theme.border },
+                isManaging && { opacity: 0.6 }
+              ]}
             >
 
               <View style={styles.exerciseTitleRow}>
                 <TouchableOpacity
                   onPress={() => setOpenExercise(isOpen ? null : exercise.exercise.name)}
                 >
-                  <Text style={styles.exerciseTitle}>
+                  <Text style={[ styles.exerciseTitle, { color: theme.text }]}>
                     {exercise.exercise.name} {isOpen ? '▲' : '▼'}
                   </Text>
                 </TouchableOpacity>
@@ -481,17 +495,24 @@ export default function SessionScreen() {
                   <View style={styles.actionsRight}>
                     <Pressable
                       onPress={() => openRenameExercise(idx)}
-                      style={styles.headerIconBtn}
+                      style={[
+                        styles.headerIconBtn, 
+                        { backgroundColor: theme.iconButtonBg, borderColor: theme.iconButtonBorder }
+                      ]}
                       hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
                     >
-                      <Ionicons name="create-outline" size={16} />
+                      <Ionicons name="create-outline" size={16} style={{ color: theme.text }}/>
                     </Pressable>
                     <Pressable
                       onPress={() => handleRemoveExercise(idx)}
-                      style={[styles.headerIconBtn, styles.iconSpacing]}
+                      style={[
+                        styles.headerIconBtn, 
+                        styles.iconSpacing,
+                        { backgroundColor: theme.iconButtonBg, borderColor: theme.iconButtonBorder }
+                      ]}
                       hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
                     >
-                      <Ionicons name="trash-outline" size={16} />
+                      <Ionicons name="trash-outline" size={16} style={{ color: theme.text }}/>
                     </Pressable>
                   </View>
                 )}
@@ -500,16 +521,16 @@ export default function SessionScreen() {
               {isOpen && (
                 <>
                   <View style={styles.exerciseHeader}>
-                    <Text style={styles.headerItem}>Sets</Text>
-                    <Text style={styles.headerItem}>Weight</Text>
-                    <Text style={styles.headerItem}>Reps</Text>
-                    <Text style={styles.headerItem}>RIR</Text>
-                    <Text style={styles.headerItem}>%</Text>
+                    <Text style={[styles.headerItem, { color: theme.text }]}>Sets</Text>
+                    <Text style={[styles.headerItem, { color: theme.text }]}>Weight</Text>
+                    <Text style={[styles.headerItem, { color: theme.text }]}>Reps</Text>
+                    <Text style={[styles.headerItem, { color: theme.text }]}>RIR</Text>
+                    <Text style={[styles.headerItem, { color: theme.text }]}>%</Text>
                   </View>
 
                   {exercise.sets.map((set, setIdx) => (
                     <View key={set.id} style={styles.setRow}>
-                      <Text style={styles.setLabel}>Set #{set.setNumber}</Text>
+                      <Text style={[styles.setLabel, { color: theme.text }]}>Set #{set.setNumber}</Text>
 
                       {(() => {
                         const exerciseId = exercise.exercise?.id as number | undefined;
@@ -522,8 +543,10 @@ export default function SessionScreen() {
                           <TextInput
                             style={[
                               styles.input,
-                              isManaging && styles.inputCompact,
-                              locked && { backgroundColor: '#eee' }
+                              { color: theme.text },
+                              isManaging && styles.inputCompact, 
+                              { borderColor: theme.inputBorder, backgroundColor: theme.inputBg },
+                              locked && { backgroundColor: theme.disabledBg } // slight overlay once calculated
                             ]}
                             keyboardType="numeric"
                             editable={!isManaging && !locked}
@@ -536,7 +559,12 @@ export default function SessionScreen() {
                       })()}
 
                       <TextInput
-                        style={[styles.input, isManaging && styles.inputCompact]}
+                        style={[
+                          styles.input,
+                          { color: theme.text },
+                          { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }, 
+                          isManaging && styles.inputCompact
+                        ]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].reps}
@@ -546,7 +574,12 @@ export default function SessionScreen() {
                       />
 
                       <TextInput
-                        style={[styles.input, isManaging && styles.inputCompact]}
+                        style={[
+                          styles.input,
+                          { color: theme.text },
+                          { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }, 
+                          isManaging && styles.inputCompact
+                        ]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].rir}
@@ -556,7 +589,12 @@ export default function SessionScreen() {
                       />
 
                       <TextInput
-                        style={[styles.input, isManaging && styles.inputCompact]}
+                        style={[
+                          styles.input,
+                          { color: theme.text },
+                          { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }, 
+                          isManaging && styles.inputCompact
+                        ]}
                         keyboardType="numeric"
                         editable={!isManaging}
                         value={edited[idx].sets[setIdx].percentage}
@@ -569,10 +607,13 @@ export default function SessionScreen() {
                         <View style={styles.actionsCell}>
                           <Pressable
                             onPress={() => handleRemoveSet(idx, setIdx)}
-                            style={styles.iconBtn}
+                            style={[
+                              styles.iconBtn,
+                              { backgroundColor: theme.iconButtonBg, borderColor: theme.iconButtonBorder }
+                            ]}
                             hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
                           >
-                            <Ionicons name="trash-outline" size={16} />
+                            <Ionicons name="trash-outline" size={16} style={{ color: theme.text }}/>
                           </Pressable>
                         </View>
                       )}
@@ -583,8 +624,14 @@ export default function SessionScreen() {
                     <View style={[styles.setRow, styles.addSetRow]}>
                       {/* column under "Set #" */}
                       <View style={styles.setLabelCol}>
-                        <Pressable onPress={() => handleAddSet(idx)} style={styles.addSetBtn}>
-                          <Ionicons name="add" size={16} />
+                        <Pressable 
+                          onPress={() => handleAddSet(idx)} 
+                          style={[
+                            styles.addSetBtn,
+                            { backgroundColor: theme.iconButtonBg, borderColor: theme.iconButtonBorder }
+                            ]}
+                        >
+                          <Ionicons name="add" size={16} style={{ color: theme.text  }}/>
                         </Pressable>
                       </View>
 
@@ -603,20 +650,35 @@ export default function SessionScreen() {
         })}
       </ScrollView>
 
+      {/* create when no match found - not handled yet */}
       {pickerVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add exercise</Text>
+          <View 
+            style={[
+              styles.modal,
+              { backgroundColor: theme.modalBg, borderColor: theme.border }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.modalTitle,
+                { color: theme.text }
+              ]}
+            >Add exercise</Text>
 
             <TextInput
-              style={styles.modalInput}
+              style={[
+                styles.modalInput,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Search or type a new exercise"
+              placeholderTextColor={ theme.placeholder }
               value={search}
               onChangeText={(t) => { setSearch(t); setSelected(null); }}
             />
 
             {/* quick create when no exact match */}
-            {search.trim().length > 0 && !exactExists && (
+            {/* {search.trim().length > 0 && !exactExists && (
               <Pressable
                 style={[styles.listRow, styles.createRow]}
                 onPress={() => setSelected({ id: null, name: search.trim() })}
@@ -624,7 +686,7 @@ export default function SessionScreen() {
                 <Ionicons name="add" size={16} />
                 <Text style={styles.listRowText}>Create “{search.trim()}”</Text>
               </Pressable>
-            )}
+            )} */}
 
             <View style={{ maxHeight: 240, marginBottom: 12 }}>
               <FlatList
@@ -636,32 +698,51 @@ export default function SessionScreen() {
                   return (
                     <Pressable
                       onPress={() => setSelected({ id: item.id, name: item.name })}
-                      style={[styles.listRow, isSel && styles.listRowSelected]}
+                      style={[
+                        styles.listRow,
+                        { borderColor: theme.border, backgroundColor: theme.listRowBg },
+                        isSel && { backgroundColor: theme.listRowSelectedBg, borderColor: theme.listRowSelectedBorder }
+                      ]}
                     >
-                      <Text style={styles.listRowText}>{item.name}</Text>
-                      {isSel && <Ionicons name="checkmark" size={16} />}
+                      <Text 
+                        style={[
+                          styles.listRowText,
+                          { color: theme.text }
+                        ]}
+                      >{item.name}</Text>
+                      {isSel && <Ionicons name="checkmark" size={16} style={{ color: theme.text }}/>}
                     </Pressable>
                   );
                 }}
                 ListEmptyComponent={
                   search.trim().length === 0
-                    ? <Text style={styles.emptyList}>No exercises.</Text>
-                    : <Text style={styles.emptyList}>No matches.</Text>
+                    ? <Text style={[styles.emptyList, { color: theme.listRowEmptyText }]}>No exercises.</Text>
+                    : <Text style={[styles.emptyList, { color: theme.listRowEmptyText }]}>No matches.</Text>
                 }
               />
             </View>
 
             <TextInput
-              style={styles.modalInput}
+              style={[
+                styles.modalInput,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Number of sets"
+              placeholderTextColor={ theme.placeholder }
               keyboardType="number-pad"
               value={numberOfSets}
               onChangeText={setNumberOfSets}
             />
 
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => setPickerVisible(false)} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => setPickerVisible(false)} 
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}
+              >
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
@@ -675,9 +756,12 @@ export default function SessionScreen() {
                   setExercises(updated);
                   setPickerVisible(false);
                 }}
-                style={styles.modalButtonConfirm}
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
               >
-                <Text>Add</Text>
+                <Text style={{ color: theme.onAccent }}>Add</Text>
               </Pressable>
             </View>
           </View>
@@ -686,20 +770,46 @@ export default function SessionScreen() {
 
       {isRenameVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Rename exercise</Text>
+          <View 
+            style={[
+              styles.modal,
+              { backgroundColor: theme.modalBg, borderColor: theme.border }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.modalTitle,
+                { color: theme.text }
+              ]}
+            >Rename exercise</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[
+                styles.modalInput,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Exercise name"
+              placeholderTextColor={ theme.placeholder }
               value={renameText}
               onChangeText={setRenameText}
             />
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} 
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}
+              >
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={saveRenameExercise} style={styles.modalButtonConfirm}>
-                <Text>Save</Text>
+              <Pressable 
+                onPress={saveRenameExercise} 
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
+              >
+                <Text style={{ color: theme.onAccent }}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -708,11 +818,25 @@ export default function SessionScreen() {
 
       {ormModal.visible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Set 1RM for {ormModal.name}</Text>
+          <View 
+            style={[
+              styles.modal,
+              { backgroundColor: theme.modalBg, borderColor: theme.border }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.modalTitle,
+                { color: theme.text }
+              ]}
+            >Set 1RM for {ormModal.name}</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[
+                styles.modalInput,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Enter 1RM weight"
+              placeholderTextColor={ theme.placeholder }
               keyboardType="numeric"
               value={ormModal.weight}
               onChangeText={(t) => setOrmModal(s => ({ ...s, weight: t }))}
@@ -720,9 +844,12 @@ export default function SessionScreen() {
             <View style={styles.modalButtons}>
               <Pressable
                 onPress={() => setOrmModal({ visible: false, eid: null, name: '', weight: '' })}
-                style={styles.modalButtonCancel}
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}
               >
-                <Text>Cancel</Text>
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={async () => {
@@ -738,9 +865,12 @@ export default function SessionScreen() {
                   }
                   setOrmModal({ visible: false, eid: null, name: '', weight: '' });
                 }}
-                style={styles.modalButtonConfirm}
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
               >
-                <Text>Save</Text>
+                <Text style={{ color: theme.onAccent }}>Save</Text>
               </Pressable>
             </View>
           </View>
@@ -777,6 +907,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     backgroundColor: '#fff' 
   },
+  
   header: { 
     flexDirection: 'row', 
     padding: 16, 
@@ -784,14 +915,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee', 
     justifyContent: 'space-between' 
   },
+  
   title: { 
     fontSize: 18, 
     fontWeight: 'bold' 
   },
+  
   main: { 
     flex: 1, 
     padding: 16 
   },
+  
   exerciseCard: { 
     backgroundColor: '#f2f2f2', 
     padding: 12, 
@@ -799,31 +933,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',              // keep icons inside rounded box
   },
+  
   exerciseTitle: { 
     fontWeight: 'bold', 
     fontSize: 16, 
     marginBottom: 10 
   },
+  
   exerciseHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     marginBottom: 8 
   },
+  
   headerItem: { 
     width: '18%', 
     fontWeight: '600', 
     fontSize: 12, 
     textAlign: 'left' 
   },
+  
   setRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 8 
   },
+  
   setLabel: { 
     width: '18%', 
     fontSize: 14 
   },
+  
   input: { 
     borderWidth: 1, 
     borderColor: '#ccc', 
@@ -833,22 +973,29 @@ const styles = StyleSheet.create({
     borderRadius: 4, 
     fontSize: 14
   },
+  
   // narrower inputs while managing to make room for actions column
-  inputCompact: { width: '17%', marginLeft: 2 },
+  inputCompact: { 
+    width: '17%', 
+    marginLeft: 2 
+  },
 
   finishButton: { 
     padding: 16, 
     backgroundColor: '#007bff', 
     alignItems: 'center' 
   },
+  
   finishText: { 
     color: 'white', 
     fontWeight: 'bold', 
     fontSize: 16 
   },
+  
   cardWrapper: { 
     marginBottom: 16 
   },
+  
   addExerciseCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -860,9 +1007,11 @@ const styles = StyleSheet.create({
     borderRadius: 8, 
     marginBottom: 16 
   },
+  
   exerciseName: { 
     fontSize: 16 
   },
+  
   modalOverlay: { 
     position: 'absolute', 
     top: 0, 
@@ -874,30 +1023,36 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     zIndex: 10 
   },
+  
   modal: { 
     width: '90%', 
     backgroundColor: '#fff', 
     padding: 20, 
     borderRadius: 10 
   },
+  
   modalTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
     marginBottom: 12 
   },
+  
   modalButtons: { 
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
     gap: 12 
   },
+  
   modalButtonCancel: { 
     padding: 10 
   },
+  
   modalButtonConfirm: { 
     padding: 10, 
     backgroundColor: '#ccc', 
     borderRadius: 6 
   },
+  
   modalInput: { 
     borderWidth: 1, 
     borderColor: '#ccc', 
@@ -909,25 +1064,56 @@ const styles = StyleSheet.create({
   },
 
   // actions / icons
-  actionsHeader: { width: '10%', textAlign: 'right' },
-  actionsCell: { width: '10%', alignItems: 'flex-end', paddingRight: 2 },
+  actionsHeader: { 
+    width: '10%', 
+    textAlign: 'right' 
+  },
+  
+  actionsCell: { 
+    width: '10%', 
+    alignItems: 'flex-end', 
+    paddingRight: 2 
+  },
+  
   iconBtn: {
-    width: 28, height: 28,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: '#ddd',
-    borderRadius: 6, backgroundColor: '#fff',
+    width: 28, 
+    height: 28,
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1, 
+    borderColor: '#ddd',
+    borderRadius: 6, 
+    backgroundColor: '#fff',
   },
 
   // add set (icon only) under "Set #"
-  addSetRow: { marginTop: 6, paddingRight: 0 },
-  setLabelCol: { width: '18%', justifyContent: 'center' },
-  col: { width: '18%' },
-  actionsCol: { width: '10%' },
+  addSetRow: { 
+    marginTop: 6, 
+    paddingRight: 0 
+  },
+  
+  setLabelCol: { 
+    width: '18%', 
+    justifyContent: 'center' 
+  },
+  
+  col: { 
+    width: '18%' 
+  },
+  
+  actionsCol: { 
+    width: '10%' 
+  },
+  
   addSetBtn: {
-    width: 32, height: 32,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: '#ccc',
-    borderRadius: 8, backgroundColor: '#fff',
+    width: 32, 
+    height: 32,
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1, 
+    borderColor: '#ccc',
+    borderRadius: 8, 
+    backgroundColor: '#fff',
   },
 
   exerciseTitleRow: {
@@ -957,22 +1143,35 @@ const styles = StyleSheet.create({
     marginLeft: 8 
   },
 
-listRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingVertical: 10,
-  paddingHorizontal: 12,
-  borderWidth: 1,
-  borderColor: '#eee',
-  borderRadius: 8,
-  marginBottom: 8,
-},
-listRowSelected: {
-  borderColor: '#007bff',
-  backgroundColor: '#eef4ff',
-},
-listRowText: { fontSize: 14 },
-createRow: { backgroundColor: '#f7f7f7' },
-emptyList: { textAlign: 'center', color: '#666', paddingVertical: 12 },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  
+  listRowSelected: {
+    borderColor: '#007bff',
+    backgroundColor: '#eef4ff',
+  },
+  
+  listRowText: { 
+    fontSize: 14 
+  },
+
+  createRow: { 
+    backgroundColor: '#f7f7f7' 
+  },
+
+  emptyList: { 
+    textAlign: 'center', 
+    color: '#666', 
+    paddingVertical: 12 
+  },
+
 });

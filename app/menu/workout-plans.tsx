@@ -120,10 +120,12 @@ return (
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.cardWrapper}>
-            <View style={[
-              styles.card, 
-              { backgroundColor: theme.buttonSecondary, borderColor: theme.border }, 
-              isManaging && { opacity: 0.6 }]}
+            <View 
+              style={[
+                styles.card, 
+                { backgroundColor: theme.buttonSecondary, borderColor: theme.border }, 
+                isManaging && { opacity: 0.6 }
+              ]}
             >
               <TouchableOpacity
                 style={styles.cardMain}
@@ -163,25 +165,40 @@ return (
       {/* create new workout modal */}
       {isModalVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Create a new workout plan</Text>
+          <View style={[ styles.modal, { backgroundColor: theme.modalBg, borderColor: theme.border } ]}>
+            <Text style={[ styles.modalTitle, {color: theme.text} ]}>Create a new workout plan</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Enter plan name"
+              placeholderTextColor={ theme.placeholder }
               value={newPlanName}
               onChangeText={setNewPlanName}
             />
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => setIsModalVisible(false)} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => setIsModalVisible(false)} 
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}>
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={async () => {
-                if (!newPlanName.trim()) return;
-                const insertedId = await workoutService.createWorkoutPlan(newPlanName.trim());
-                setIsModalVisible(false);
-                router.push(`/menu/workouts/${insertedId}`);
-              }} style={styles.modalButtonConfirm}>
-                <Text>Create</Text>
+              <Pressable 
+                onPress={async () => {
+                  if (!newPlanName.trim()) return;
+                  const insertedId = await workoutService.createWorkoutPlan(newPlanName.trim());
+                  setIsModalVisible(false);
+                  router.push(`/menu/workouts/${insertedId}`);
+                }} 
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
+              >
+                <Text style={{ color: theme.onAccent }}>Create</Text>
               </Pressable>
             </View>
           </View>
@@ -191,20 +208,36 @@ return (
       {/* rename workout plan modal */}
       {isRenameVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Rename workout plan</Text>
+          <View style={[ styles.modal, { backgroundColor: theme.modalBg, borderColor: theme.border } ]}>
+            <Text style={[ styles.modalTitle, {color: theme.text} ]}>Rename workout plan</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Plan name"
+              placeholderTextColor={ theme.placeholder }
               value={renameText}
               onChangeText={setRenameText}
             />
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} 
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}
+              >
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={saveRenamePlan} style={styles.modalButtonConfirm}>
-                <Text>Save</Text>
+              <Pressable 
+                onPress={saveRenamePlan} 
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
+              >
+                <Text style={{ color: theme.onAccent }}>Save</Text>
               </Pressable>
             </View>
           </View>

@@ -1,7 +1,3 @@
-          //   // load temporary deload adjusted workout NEXT
-          //   await workoutService.resetWorkoutCounter(numericWorkoutId); // this would go to DeloadScreen
-          //   navigation.goBack(); // exit session for now... this would also go to DeloadScreen, i assume twice?
-// app/menu/deload/[workoutId].tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useWorkoutService } from '@/contexts/WorkoutServiceContext';
 import type { SessionExercise } from '@/models/session-exercise';
 import type { Workout } from '@/models/workout';
+import { useAppTheme } from '@/themes/theme';
 
 type EditableSet = {
   id: number;
@@ -29,6 +26,7 @@ type EditableExercise = {
 };
 
 export default function DeloadScreen() {
+  const { theme } = useAppTheme();
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const wid = Number(workoutId);
   const router = useRouter();
@@ -75,7 +73,11 @@ export default function DeloadScreen() {
   }, [wid, workoutService]);
 
   useEffect(() => {
-    navigation.setOptions({ title: workout?.name ? `Deload · ${workout.name}` : 'Deload' });
+    navigation.setOptions({ 
+      title: workout?.name ? `Deload · ${workout.name}` : 'Deload',
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
+    });
   }, [navigation, workout?.name]);
 
   const parseNum = (raw: string) => {
@@ -115,24 +117,27 @@ export default function DeloadScreen() {
   const title = useMemo(() => workout?.name ?? 'Deload', [workout]);
 
 return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>Deload mode — nothing will be saved</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
+      <View style={[styles.banner, { backgroundColor: theme.bannerBg }]}>
+        <Text style={[styles.bannerText, { color: theme.bannerText }]}>Deload mode — nothing will be saved</Text>
       </View>
-
-      <Text style={styles.title}>{title}</Text>
 
       <ScrollView style={styles.main}>
         {edited.map((ex: EditableExercise, exIdx: number) => (
-          <View key={ex.weid} style={styles.exerciseCard}>
-            <Text style={styles.exerciseTitle}>{ex.name}</Text>
+          <View key={ex.weid} 
+            style={[
+              styles.exerciseCard, 
+              {backgroundColor: theme.buttonSecondary, borderColor: theme.border }
+            ]}
+          >
+            <Text style={[styles.exerciseTitle, { color: theme.text }]}>{ex.name}</Text>
 
             <View style={styles.exerciseHeader}>
-              <Text style={styles.headerItem}>Sets</Text>
-              <Text style={styles.headerItem}>Weight</Text>
-              <Text style={styles.headerItem}>Reps</Text>
-              <Text style={styles.headerItem}>RIR</Text>
-              <Text style={styles.headerItem}>%</Text>
+              <Text style={[styles.headerItem, { color: theme.text }]}>Sets</Text>
+              <Text style={[styles.headerItem, { color: theme.text }]}>Weight</Text>
+              <Text style={[styles.headerItem, { color: theme.text }]}>Reps</Text>
+              <Text style={[styles.headerItem, { color: theme.text }]}>RIR</Text>
+              <Text style={[styles.headerItem, { color: theme.text }]}>%</Text>
             </View>
 
             {ex.sets.map((s: EditableSet, setIdx: number) => {
@@ -146,18 +151,32 @@ return (
 
               return (
                 <View key={s.id} style={styles.setRow}>
-                  <Text style={styles.setLabel}>Set #{s.setNumber}</Text>
+                  <Text style={[styles.setLabel, { color: theme.text }]}>Set #{s.setNumber}</Text>
 
                   {/* Weight: editable only when NOT % mode with ORM; otherwise read-only */}
                   {locked ? (
-                    <View style={[styles.readCell, styles.readCellLocked]}>
-                      <Text style={styles.readText}>
+                    <View 
+                      style={[
+                        styles.readCell, 
+                        styles.readCellLocked,
+                        { borderColor: theme.inputBorder, backgroundColor: theme.disabledBg }
+                      ]}
+                    >
+                      <Text 
+                        style={[
+                          styles.readText,
+                          { color: theme.text }
+                        ]}
+                      >
                         {derivedWeight != null ? String(round2(derivedWeight)) : '—'}
                       </Text>
                     </View>
                   ) : (
                     <TextInput
-                      style={styles.input}
+                      style={[
+                        styles.input,
+                        { color: theme.text, borderColor: theme.inputBorder, backgroundColor: theme.inputBg }
+                      ]}
                       keyboardType="numeric"
                       editable // allowed in deload
                       value={edited[exIdx].sets[setIdx].weight}
@@ -175,7 +194,10 @@ return (
 
                   {/* Reps: editable */}
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      { color: theme.text, borderColor: theme.inputBorder, backgroundColor: theme.inputBg }
+                    ]}
                     keyboardType="numeric"
                     editable
                     value={edited[exIdx].sets[setIdx].reps}
@@ -191,13 +213,33 @@ return (
                   />
 
                   {/* RIR: read-only */}
-                  <View style={styles.readCell}>
-                    <Text style={styles.readText}>{s.rir || '0'}</Text>
+                  <View 
+                    style={[
+                      styles.readCell,
+                      { borderColor: theme.inputBorder, backgroundColor: theme.inputBg }
+                    ]
+                  }>
+                    <Text 
+                      style={[
+                        styles.readText,
+                        { color: theme.text }
+                      ]}
+                    >{s.rir || '0'}</Text>
                   </View>
 
                   {/* %: read-only */}
-                  <View style={styles.readCell}>
-                    <Text style={styles.readText}>{pct > 0 ? String(pct) : ''}</Text>
+                  <View 
+                    style={[
+                      styles.readCell,
+                      { borderColor: theme.inputBorder, backgroundColor: theme.inputBg }
+                    ]}
+                  >
+                    <Text 
+                      style={[
+                        styles.readText,
+                        { color: theme.text }
+                      ]}
+                    >{pct > 0 ? String(pct) : ''}</Text>
                   </View>
                 </View>
               );
@@ -222,8 +264,6 @@ const styles = StyleSheet.create({
 
   banner: { paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#fff7e6' },
   bannerText: { fontWeight: '600', color: '#8a5200' },
-
-  title: { fontSize: 18, fontWeight: 'bold', paddingHorizontal: 16, paddingTop: 10 },
 
   main: { flex: 1, padding: 16 },
 

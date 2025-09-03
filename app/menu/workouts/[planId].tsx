@@ -7,8 +7,10 @@ import { useManagementMode } from '@/contexts/ManagementModeContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/themes/theme';
 
 export default function WorkoutsScreen() {
+  const { theme } = useAppTheme();
   const workoutService = useWorkoutService();
   const router = useRouter();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -28,9 +30,11 @@ export default function WorkoutsScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Workouts',
+      headerStyle: { backgroundColor: theme.card },
+      headerTintColor: theme.text,
       headerRight: () => (
        <Pressable onPress={toggleManaging} style={{ paddingRight: 16 }}>
-        <Ionicons name="ellipsis-vertical" size={24} />
+        <Ionicons name="ellipsis-vertical" size={24} color={ theme.text } />
        </Pressable>
       ),
     });
@@ -92,13 +96,24 @@ export default function WorkoutsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['bottom']}>
 
       {/* Add New Workout card (only in management mode) */}
       {isManaging && (
         <View style={styles.cardWrapper}>
-          <TouchableOpacity style={styles.newPlanCard} onPress={handleAddNew}>
-            <Text style={styles.workoutName}>New Workout</Text>
+          <TouchableOpacity 
+            style={[
+              styles.newPlanCard,
+              { borderColor: theme.dashedBorder }
+            ]} 
+            onPress={handleAddNew}
+          >
+            <Text 
+              style={[
+                styles.workoutName,
+                { color: theme.muted }
+              ]}
+            >New Workout</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -107,13 +122,23 @@ export default function WorkoutsScreen() {
         data={workouts}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={[styles.card, isManaging && { opacity: 0.6 }]}>
+          <View 
+            style={[
+              styles.card,
+              { backgroundColor: theme.buttonSecondary, borderColor: theme.border }, 
+              isManaging && { opacity: 0.6 }
+            ]}>
             <TouchableOpacity
               style={styles.cardMain}
               disabled={isManaging}
               onPress={() => router.push(`/menu/workout/${item.id}`)}
             >
-              <Text style={styles.workoutName}>{item.name}</Text>
+              <Text 
+                style={[
+                  styles.workoutName,
+                  { color: theme.text }
+                ]}
+              >{item.name}</Text>
             </TouchableOpacity>
 
             {isManaging && (
@@ -138,28 +163,49 @@ export default function WorkoutsScreen() {
         )}
       />
 
-      {/* create new workout modal */}
+            {/* create new workout modal */}
             {isModalVisible && (
               <View style={styles.modalOverlay}>
-                <View style={styles.modal}>
-                  <Text style={styles.modalTitle}>Create a new workout</Text>
+                <View style={[styles.modal, { backgroundColor: theme.modalBg, borderColor: theme.border }]}>
+                  <Text 
+                    style={[
+                      styles.modalTitle,
+                      { color: theme.text }
+                    ]}
+                  >Create a new workout</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[
+                      styles.input,
+                      { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+                    ]}
                     placeholder="Enter workout name"
+                    placeholderTextColor={ theme.placeholder }
                     value={newWorkoutName}
                     onChangeText={setNewWorkoutName}
                   />
                   <View style={styles.modalButtons}>
-                    <Pressable onPress={() => setIsModalVisible(false)} style={styles.modalButtonCancel}>
-                      <Text>Cancel</Text>
+                    <Pressable 
+                      onPress={() => setIsModalVisible(false)} 
+                      style={[
+                        styles.modalButtonCancel,
+                        { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                      ]}
+                    >
+                      <Text style={{ color: theme.text }}>Cancel</Text>
                     </Pressable>
-                    <Pressable onPress={async () => {
-                      if (!newWorkoutName.trim()) return;
-                      const insertedId = await workoutService.createWorkout(newWorkoutName.trim(), numericPlanId);
-                      setIsModalVisible(false);
-                      router.push(`/menu/workout/${insertedId}`);
-                    }} style={styles.modalButtonConfirm}>
-                      <Text>Create</Text>
+                    <Pressable 
+                      onPress={async () => {
+                        if (!newWorkoutName.trim()) return;
+                        const insertedId = await workoutService.createWorkout(newWorkoutName.trim(), numericPlanId);
+                        setIsModalVisible(false);
+                        router.push(`/menu/workout/${insertedId}`);
+                      }} 
+                      style={[
+                        styles.modalButtonConfirm,
+                        { backgroundColor: theme.accent }
+                      ]}
+                    >
+                      <Text style={{ color: theme.onAccent }}>Create</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -169,20 +215,46 @@ export default function WorkoutsScreen() {
       {/* rename workout plan modal */}
       {isRenameVisible && (
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Rename workout</Text>
+          <View 
+            style={[
+              styles.modal,
+              { backgroundColor: theme.modalBg, borderColor: theme.border }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.modalTitle,
+                { color: theme.text }
+              ]}
+            >Rename workout</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
+              ]}
               placeholder="Workout name"
+              placeholderTextColor={ theme.placeholder }
               value={renameText}
               onChangeText={setRenameText}
             />
             <View style={styles.modalButtons}>
-              <Pressable onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} style={styles.modalButtonCancel}>
-                <Text>Cancel</Text>
+              <Pressable 
+                onPress={() => { setIsRenameVisible(false); setRenameTarget(null); }} 
+                style={[
+                  styles.modalButtonCancel,
+                  { backgroundColor: theme.buttonSecondary, borderRadius: 6 }
+                ]}
+              >
+                <Text style={{ color: theme.text }}>Cancel</Text>
               </Pressable>
-              <Pressable onPress={saveRenameWorkout} style={styles.modalButtonConfirm}>
-                <Text>Save</Text>
+              <Pressable 
+                onPress={saveRenameWorkout} 
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: theme.accent }
+                ]}
+              >
+                <Text style={{ color: theme.onAccent }}>Save</Text>
               </Pressable>
             </View>
           </View>
